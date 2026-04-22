@@ -54,11 +54,18 @@ export default function BulkReorderModal({ pharmacyId, pharmacyName, selectedIte
   });
 
   useEffect(() => {
-    supabase.from('suppliers').select('id, name, phone')
-      .eq('pharmacy_id', pharmacyId).eq('is_active', true)
-      .then(({ data }) => setSuppliers(data || []))
-      .catch(console.error)
-      .finally(() => setLoadingSuppliers(false));
+    const fetchSuppliers = async () => {
+      try {
+        const { data } = await supabase.from('suppliers').select('id, name, phone')
+          .eq('pharmacy_id', pharmacyId).eq('is_active', true);
+        setSuppliers(data || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoadingSuppliers(false);
+      }
+    };
+    fetchSuppliers();
   }, [pharmacyId]);
 
   const handleQtyChange = (id: number, val: string) => {
