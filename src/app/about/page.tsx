@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useTypewriter } from "@/components/HeroSection";
+import { Icons } from "@/components/Icons";
 
 /* ═══════════════════════════════════════════════════════════
    INTERSECTION-OBSERVER HOOK  — reveal-on-scroll
@@ -283,10 +283,10 @@ export default function About() {
             }}
           >
             {[
-              { value: pharmacies, label: "Pharmacies", icon: "🏪", gradient: "linear-gradient(135deg, #6366f1, #818cf8)" },
-              { value: uptime, label: "Uptime SLA", icon: "⚡", gradient: "linear-gradient(135deg, #818cf8, #a5b4fc)" },
-              { value: invoices, label: "Invoices Processed", icon: "📄", gradient: "linear-gradient(135deg, #a78bfa, #c4b5fd)" },
-              { value: cities, label: "Cities Covered", icon: "🌍", gradient: "linear-gradient(135deg, #7c3aed, #a78bfa)" },
+              { value: pharmacies, label: "Pharmacies", icon: Icons.store, gradient: "linear-gradient(135deg, #6366f1, #818cf8)" },
+              { value: uptime, label: "Uptime SLA", icon: Icons.zap, gradient: "linear-gradient(135deg, #818cf8, #a5b4fc)" },
+              { value: invoices, label: "Invoices Processed", icon: Icons.fileText, gradient: "linear-gradient(135deg, #a78bfa, #c4b5fd)" },
+              { value: cities, label: "Cities Covered", icon: Icons.globe, gradient: "linear-gradient(135deg, #7c3aed, #a78bfa)" },
             ].map((stat, i) => (
               <div
                 key={stat.label}
@@ -320,7 +320,7 @@ export default function About() {
                   width: "100px", height: "100px", borderRadius: "50%",
                   background: stat.gradient, opacity: 0.08,
                 }} />
-                <div style={{ fontSize: "1.75rem", marginBottom: "0.75rem" }}>{stat.icon}</div>
+                <div style={{ color: "rgba(255,255,255,0.85)", marginBottom: "0.75rem", display: "flex", justifyContent: "center", transform: "scale(1.35)" }}>{stat.icon}</div>
                 <div style={{
                   fontSize: "2.5rem", fontWeight: 800, lineHeight: 1,
                   background: stat.gradient,
@@ -412,9 +412,9 @@ export default function About() {
                 
                 <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                    {[
-                     { label: "Founded", value: "2022", icon: "🚀", accent: "#6366f1" },
-                     { label: "Pharmacies", value: "2,500+", icon: "🏪", accent: "#8b5cf6" },
-                     { label: "Support", value: "24/7", icon: "🛠️", accent: "#a78bfa" },
+                     { label: "Founded", value: "2022", icon: Icons.rocket, accent: "#6366f1" },
+                     { label: "Pharmacies", value: "2,500+", icon: Icons.store, accent: "#8b5cf6" },
+                     { label: "Support", value: "24/7", icon: Icons.tool, accent: "#a78bfa" },
                    ].map((item, i) => (
                      <div key={item.label} style={{
                        display: "flex", alignItems: "center", gap: "1.25rem",
@@ -434,7 +434,7 @@ export default function About() {
                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.03)";
                      }}
                      >
-                        <span style={{ fontSize: "1.5rem" }}>{item.icon}</span>
+                        <span style={{ color: item.accent, display: "flex" }}>{item.icon}</span>
                         <div>
                           <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>{item.label}</div>
                           <div style={{ fontSize: "1.25rem", fontWeight: 700, color: "#1e293b" }}>{item.value}</div>
@@ -503,10 +503,10 @@ export default function About() {
             }} />
 
             {[
-              { year: "2022", title: "The Spark", desc: "Founded by a team of pharmacists tired of outdated POS systems.", icon: "💡", side: "left" },
-              { year: "2023", title: "AI Integration", desc: "Launched Gemini-powered invoice scanning — 10x faster than manual.", icon: "🤖", side: "right" },
-              { year: "2024", title: "Scaling Up", desc: "Crossed 1,000 pharmacies. Introduced offline-first architecture.", icon: "📈", side: "left" },
-              { year: "2025", title: "National Reach", desc: "2,500+ pharmacies in 150+ cities. Mobile scanner feature launched.", icon: "🚀", side: "right" },
+              { year: "2022", title: "The Spark", desc: "Founded by a team of pharmacists tired of outdated POS systems.", icon: Icons.lightbulb, side: "left" },
+              { year: "2023", title: "AI Integration", desc: "Launched Gemini-powered invoice scanning — 10x faster than manual.", icon: Icons.cpu, side: "right" },
+              { year: "2024", title: "Scaling Up", desc: "Crossed 1,000 pharmacies. Introduced offline-first architecture.", icon: Icons.trendingUp, side: "left" },
+              { year: "2025", title: "National Reach", desc: "2,500+ pharmacies in 150+ cities. Mobile scanner feature launched.", icon: Icons.rocket, side: "right" },
             ].map((item, i) => (
               <div
                 key={item.year}
@@ -552,7 +552,7 @@ export default function About() {
                 }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-                    <span style={{ fontSize: "1.5rem" }}>{item.icon}</span>
+                    <span style={{ color: "#6366f1", display: "flex" }}>{item.icon}</span>
                     <span style={{
                       fontSize: "0.75rem", fontWeight: 700, color: "#6366f1",
                       background: "rgba(99,102,241,0.08)", padding: "0.25rem 0.75rem",
@@ -604,9 +604,9 @@ export default function About() {
                 <div style={{
                   width: "56px", height: "56px", background: "rgba(255,255,255,0.1)",
                   borderRadius: "1rem", display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "1.75rem", marginBottom: "1.5rem",
+                  color: "rgba(255,255,255,0.85)", marginBottom: "1.5rem",
                   backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.1)",
-                }}>🔭</div>
+                }}>{Icons.eye}</div>
                 <h3 style={{ fontSize: "2rem", fontWeight: 700, marginBottom: "1.25rem" }}>Our Vision</h3>
                 <p style={{ fontSize: "1.1rem", lineHeight: 1.7, color: "rgba(255,255,255,0.7)" }}>
                   To be the global intelligence layer for healthcare retail, transforming every local pharmacy into a center of technological excellence.
@@ -650,8 +650,8 @@ export default function About() {
               <div style={{
                 width: "56px", height: "56px", background: "rgba(99,102,241,0.1)",
                 borderRadius: "1rem", display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "1.75rem", marginBottom: "1.5rem"
-              }}>🎯</div>
+                color: "#6366f1", marginBottom: "1.5rem"
+              }}>{Icons.target}</div>
               <h3 style={{ fontSize: "2rem", fontWeight: 700, color: "#0f172a", marginBottom: "1.25rem" }}>Our Mission</h3>
               <p style={{ fontSize: "1.1rem", lineHeight: 1.7, color: "#64748b" }}>
                 To eliminate operational friction for pharmacists through AI automation, allowing them to focus on what matters most: patient health and safety.
@@ -725,37 +725,37 @@ export default function About() {
               {
                 title: "Pharmacist-First",
                 desc: "We build for the person behind the counter, not just the business. Every feature starts with their workflow.",
-                icon: "🩺",
+                icon: Icons.heartPulse,
                 gradient: "linear-gradient(135deg, #6366f1, #818cf8)",
               },
               {
                 title: "Relentless Innovation",
                 desc: "We push the boundaries of what's possible with AI in healthcare. Status quo isn't good enough.",
-                icon: "💡",
+                icon: Icons.lightbulb,
                 gradient: "linear-gradient(135deg, #8b5cf6, #a78bfa)",
               },
               {
                 title: "Absolute Integrity",
                 desc: "When it comes to patient data and compliance, there are no shortcuts. Trust is non-negotiable.",
-                icon: "🛡️",
+                icon: Icons.shield,
                 gradient: "linear-gradient(135deg, #7c3aed, #8b5cf6)",
               },
               {
                 title: "Speed of Execution",
                 desc: "Healthcare doesn't wait, and neither do we. Ship fast, iterate faster, and always deliver quality.",
-                icon: "⚡",
+                icon: Icons.zap,
                 gradient: "linear-gradient(135deg, #6366f1, #a78bfa)",
               },
               {
                 title: "Data-Driven Decisions",
                 desc: "Every product decision is backed by real pharmacy data, user feedback, and measurable outcomes.",
-                icon: "📊",
+                icon: Icons.chart,
                 gradient: "linear-gradient(135deg, #818cf8, #c4b5fd)",
               },
               {
                 title: "Community Over Clients",
                 desc: "We build a community of pharmacists who grow together. Your success is our success.",
-                icon: "🤝",
+                icon: Icons.users,
                 gradient: "linear-gradient(135deg, #a78bfa, #6366f1)",
               },
             ].map((value, i) => (
@@ -790,9 +790,11 @@ export default function About() {
                   }} />
                 )}
                 <div style={{
-                  fontSize: "2.25rem", marginBottom: "1.25rem",
-                  transition: "transform 0.3s ease",
+                  marginBottom: "1.25rem",
+                  transition: "transform 0.3s ease, color 0.3s ease",
                   transform: activeValue === i ? "scale(1.2)" : "scale(1)",
+                  color: activeValue === i ? "rgba(255,255,255,0.9)" : "#6366f1",
+                  display: "flex",
                 }}>{value.icon}</div>
                 <h3 style={{
                   fontSize: "1.25rem", fontWeight: 700,

@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Icons } from "@/components/Icons";
 
 /* ─── Typewriter Hook ─── */
@@ -74,11 +75,11 @@ function useCountUp(end: number, duration = 2000, start = 0, trigger = true) {
 
 /* ─── Notification Toast Data ─── */
 const TOASTS = [
-  { icon: "📄", title: "Invoice Scanned", desc: "32 items extracted in 2.3s", color: "#6366f1" },
-  { icon: "✅", title: "GST Auto-Split", desc: "CGST 9% + SGST 9% applied", color: "#10b981" },
-  { icon: "📦", title: "Batch Mapped", desc: "Batch #AX7819 → Paracetamol", color: "#8b5cf6" },
-  { icon: "⚡", title: "Anomaly Detected", desc: "MRP mismatch on row 14", color: "#f59e0b" },
-  { icon: "📱", title: "Scanner Connected", desc: "Phone scanner linked via Wi-Fi", color: "#3b82f6" },
+  { icon: Icons.fileText, title: "Invoice Scanned", desc: "32 items extracted in 2.3s", color: "#6366f1" },
+  { icon: Icons.check, title: "GST Auto-Split", desc: "CGST 9% + SGST 9% applied", color: "#10b981" },
+  { icon: Icons.box, title: "Batch Mapped", desc: "Batch #AX7819 → Paracetamol", color: "#8b5cf6" },
+  { icon: Icons.zap, title: "Anomaly Detected", desc: "MRP mismatch on row 14", color: "#f59e0b" },
+  { icon: Icons.phone, title: "Scanner Connected", desc: "Phone scanner linked via Wi-Fi", color: "#3b82f6" },
 ];
 
 interface HeroSectionProps {
@@ -395,8 +396,8 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
               flexWrap: "wrap",
             }}
           >
-            <a
-              href="#pricing"
+            <Link
+              href="/panel/register"
               className="hero-cta-primary"
               style={{
                 padding: "1rem 2.25rem",
@@ -419,7 +420,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
                 Start Free Trial
                 {Icons.arrowRight}
               </span>
-            </a>
+            </Link>
             <a
               href="#demo"
               className="hero-cta-secondary"
@@ -457,13 +458,13 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
             }}
           >
             {[
-              { value: `${countPharmacies.toLocaleString()}+`, label: "Pharmacies", icon: "🏪" },
-              { value: `${(countAccuracy / 10).toFixed(1)}%`, label: "Accuracy", icon: "🎯" },
-              { value: `₹${countInvoices.toLocaleString()}`, label: "Avg Revenue/Day", icon: "📈" },
+              { value: `${countPharmacies.toLocaleString()}+`, label: "Pharmacies", icon: Icons.store },
+              { value: `${(countAccuracy / 10).toFixed(1)}%`, label: "Accuracy", icon: Icons.target },
+              { value: `₹${countInvoices.toLocaleString()}`, label: "Avg Revenue/Day", icon: Icons.trendingUp },
             ].map((stat) => (
               <div key={stat.label} style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <span style={{ fontSize: "0.9rem" }}>{stat.icon}</span>
+                  <span style={{ display: "flex", color: "rgba(255,255,255,0.7)" }}>{stat.icon}</span>
                   <span
                     style={{
                       fontSize: "1.4rem",
@@ -558,43 +559,14 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
               {/* Dashboard content area */}
               <div style={{ position: "relative", aspectRatio: "16/10", overflow: "hidden", background: "#0f0f23" }}>
-                <video
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  onPlaying={(e) => {
-                    const fallback = e.currentTarget.parentElement?.querySelector(".video-fallback") as HTMLElement;
-                    if (fallback) fallback.style.opacity = "0";
-                  }}
-                  onCanPlay={(e) => {
-                    e.currentTarget.play().catch(() => {});
-                  }}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                >
-                  <source src="https://videos.pexels.com/video-files/7579956/7579956-hd_1920_1080_30fps.mp4" type="video/mp4" />
-                  <source src="https://videos.pexels.com/video-files/5752729/5752729-hd_1920_1080_30fps.mp4" type="video/mp4" />
-                </video>
-
-                <div
-                  className="video-fallback"
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    zIndex: 1,
-                    transition: "opacity 0.8s ease-out",
-                    pointerEvents: "none",
-                  }}
-                >
-                  <Image
-                    src="/dashboard-preview.png"
-                    alt="ShelfCure Dashboard"
-                    fill
-                    priority
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    style={{ objectFit: "cover" }}
-                  />
-                </div>
+                <Image
+                  src="/dashboard-preview.png"
+                  alt="ShelfCure Dashboard"
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  style={{ objectFit: "cover" }}
+                />
 
                 {/* Gradient overlay */}
                 <div
@@ -737,7 +709,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
                 minWidth: "260px",
               }}
             >
-              <span style={{ fontSize: "1.3rem" }}>{currentToast.icon}</span>
+              <span style={{ display: "flex", color: currentToast.color }}>{currentToast.icon}</span>
               <div>
                 <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "white" }}>{currentToast.title}</div>
                 <div style={{ fontSize: "0.68rem", color: "rgba(148,163,184,0.8)", fontWeight: 500 }}>

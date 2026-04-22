@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useTypewriter } from "@/components/HeroSection";
 import { BLOG_POSTS } from "@/lib/blog-data";
 import { Icons } from "@/components/Icons";
 
@@ -33,6 +34,8 @@ export default function BlogPage() {
   const posts = useInView(0.1);
   const newsletter = useInView(0.2);
 
+  const displayText = useTypewriter(["playbook.", "intelligence hub.", "growth guide.", "success manual."], 80, 2000, 40);
+
   const [activeCategory, setActiveCategory] = useState("All Posts");
   const categories = ["All Posts", "AI & Innovation", "Operations", "Compliance", "Success Stories"];
 
@@ -50,45 +53,67 @@ export default function BlogPage() {
       <section
         ref={hero.ref}
         style={{
-          paddingTop: "180px",
-          paddingBottom: "8rem",
+          paddingTop: "160px",
+          paddingBottom: "7rem",
           position: "relative",
+          background: "linear-gradient(180deg, #0c0a1f 0%, #110e2e 50%, #1a1640 100%)",
+          color: "white",
+          minHeight: "70vh",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          minHeight: "50vh"
         }}
       >
-        {/* Luminous Background */}
+        {/* Grid background */}
         <div style={{
           position: "absolute", inset: 0,
-          background: "linear-gradient(180deg, rgba(12,10,31,0.02) 0%, rgba(99,102,241,0.05) 50%, rgba(12,10,31,0.02) 100%)",
-          zIndex: 0
+          backgroundImage: "linear-gradient(rgba(99,102,241,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.06) 1px, transparent 1px)",
+          backgroundSize: "60px 60px",
+          maskImage: "radial-gradient(ellipse 80% 70% at 50% 40%, black 10%, transparent 70%)",
+          WebkitMaskImage: "radial-gradient(ellipse 80% 70% at 50% 40%, black 10%, transparent 70%)",
+          pointerEvents: "none",
         }} />
-        <div style={{
-          position: "absolute", top: "20%", left: "50%", transform: "translate(-50%, -50%)",
-          width: "60vw", height: "60vw",
-          background: "radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 60%)",
-          filter: "blur(80px)", zIndex: 0, pointerEvents: "none"
+
+        {/* Orbs */}
+        <div className="animate-float" style={{
+          position: "absolute", top: "15%", left: "8%",
+          width: "300px", height: "300px",
+          background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)",
+          filter: "blur(60px)", pointerEvents: "none",
+        }} />
+        <div className="animate-float" style={{
+          position: "absolute", bottom: "10%", right: "5%",
+          width: "400px", height: "400px",
+          background: "radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)",
+          filter: "blur(60px)", pointerEvents: "none",
+          animationDelay: "3s",
+        }} />
+        <div className="animate-pulse-glow" style={{
+          position: "absolute", top: "35%", right: "18%",
+          width: "6px", height: "6px", borderRadius: "50%",
+          background: "#818cf8",
+        }} />
+        <div className="animate-pulse-glow" style={{
+          position: "absolute", top: "25%", left: "25%",
+          width: "4px", height: "4px", borderRadius: "50%",
+          background: "#c4b5fd", animationDelay: "1.5s",
         }} />
 
         <div className="section-container" style={{ position: "relative", zIndex: 10, textAlign: "center", maxWidth: "900px" }}>
+          {/* Badge */}
           <div
             className={hero.inView ? "animate-fade-in-up" : "opacity-0"}
             style={{
               display: "inline-flex", alignItems: "center", gap: "0.5rem",
-              padding: "0.5rem 1.25rem",
+              padding: "0.4rem 1rem",
               background: "rgba(99,102,241,0.1)",
+              backdropFilter: "blur(12px)",
               borderRadius: "var(--radius-full)",
               border: "1px solid rgba(99,102,241,0.2)",
               marginBottom: "2rem",
-              boxShadow: "0 4px 20px rgba(99,102,241,0.1)",
-              backdropFilter: "blur(10px)"
             }}
           >
-            <svg className="w-4 h-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275z"/></svg>
-            <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--color-primary)", textTransform: "uppercase", letterSpacing: "0.15em" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#818cf8", boxShadow: "0 0 12px #818cf8", display: "inline-block" }} />
+            <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#818cf8", textTransform: "uppercase", letterSpacing: "0.1em" }}>
               Insights & Intelligence
             </span>
           </div>
@@ -96,24 +121,37 @@ export default function BlogPage() {
           <h1
             className={hero.inView ? "animate-fade-in-up delay-100" : "opacity-0"}
             style={{
-              fontSize: "clamp(3rem, 6vw, 5rem)",
+              fontSize: "clamp(2.5rem, 5vw, 5rem)",
               fontWeight: 800,
-              lineHeight: 1.05,
+              lineHeight: 1.08,
               fontFamily: "var(--font-display)",
-              color: "var(--color-text)",
-              letterSpacing: "-0.03em",
-              marginBottom: "1.5rem"
+              color: "white",
+              marginBottom: "1.5rem",
             }}
           >
-            The modern <span style={{ color: "var(--color-primary)" }}>pharmacy</span><br />
-            playbook.
+            The modern pharmacy<br />
+            <span style={{
+              background: "linear-gradient(135deg, #818cf8, #c7d2fe, #a78bfa)",
+              backgroundSize: "200% 200%",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              animation: "gradient-shift 4s ease-in-out infinite",
+            }}>
+              {displayText}
+              <span style={{
+                display: "inline-block", width: "3px", height: "1em",
+                background: "#818cf8", marginLeft: "4px",
+                animation: "blink 1s step-end infinite",
+                verticalAlign: "text-bottom",
+              }} />
+            </span>
           </h1>
-          
+
           <p
             className={hero.inView ? "animate-fade-in-up delay-200" : "opacity-0"}
             style={{
               fontSize: "clamp(1.1rem, 2vw, 1.25rem)",
-              color: "var(--color-text-muted)",
+              color: "rgba(148, 163, 184, 0.9)",
               maxWidth: "600px",
               margin: "0 auto",
               lineHeight: 1.6,
@@ -214,8 +252,8 @@ export default function BlogPage() {
                         <p style={{ color: "var(--color-text-muted)", fontSize: "1.1rem", lineHeight: 1.7, marginBottom: "2.5rem" }}>{featuredPost.excerpt}</p>
                         
                         <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: "1rem" }}>
-                           <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "rgba(99,102,241,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", border: "1px solid rgba(99,102,241,0.2)" }}>
-                             👔
+                           <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "rgba(99,102,241,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#6366f1", border: "1px solid rgba(99,102,241,0.2)" }}>
+                             {Icons.user}
                            </div>
                            <div>
                               <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--color-text)" }}>{featuredPost.author}</div>
@@ -268,7 +306,7 @@ export default function BlogPage() {
                        <p style={{ color: "var(--color-text-muted)", fontSize: "0.95rem", lineHeight: 1.6, marginBottom: "2rem", flex: 1 }}>{post.excerpt}</p>
                        
                        <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: "0.75rem", paddingTop: "1.5rem", borderTop: "1px solid var(--color-border)" }}>
-                          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "var(--color-surface)", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", fontSize: "0.9rem", border: "1px solid var(--color-border)" }}>👔</div>
+                          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "#6366f1", border: "1px solid var(--color-border)", transform: "scale(0.8)" }}>{Icons.user}</div>
                           <div>
                             <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--color-text)" }}>{post.author}</div>
                             <div style={{ fontSize: "0.75rem", color: "var(--color-text-muted)" }}>{post.date}</div>
@@ -354,6 +392,14 @@ export default function BlogPage() {
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes gradient-shift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
         
         .luminous-btn {
            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);

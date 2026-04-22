@@ -30,18 +30,6 @@ function useInView(threshold = 0.15) {
 export default function Home() {
   const [mobileNav, setMobileNav] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [isSubmittingCTA, setIsSubmittingCTA] = useState(false);
-  const [ctaSuccess, setCtaSuccess] = useState(false);
-
-  const handleCTASubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmittingCTA(true);
-    setTimeout(() => {
-      setIsSubmittingCTA(false);
-      setCtaSuccess(true);
-    }, 1000);
-  };
-
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
@@ -835,11 +823,11 @@ export default function Home() {
             <div style={{ position: "absolute", top: "85%", left: "5%", width: "90%", height: "1px", borderTop: "2px dashed rgba(203,213,225,0.3)" }} />
 
             {/* Cross Lines to center */}
-            <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
-              <path d="M 50% 50% L 35% 15%" stroke="rgba(203,213,225,0.3)" strokeWidth="2" strokeDasharray="4 4" fill="none" />
-              <path d="M 50% 50% L 35% 85%" stroke="rgba(203,213,225,0.3)" strokeWidth="2" strokeDasharray="4 4" fill="none" />
-              <path d="M 50% 50% L 65% 15%" stroke="rgba(203,213,225,0.3)" strokeWidth="2" strokeDasharray="4 4" fill="none" />
-              <path d="M 50% 50% L 65% 85%" stroke="rgba(203,213,225,0.3)" strokeWidth="2" strokeDasharray="4 4" fill="none" />
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
+              <path d="M 50 50 L 35 15" stroke="rgba(203,213,225,0.3)" strokeWidth="0.5" strokeDasharray="1.5 1.5" fill="none" />
+              <path d="M 50 50 L 35 85" stroke="rgba(203,213,225,0.3)" strokeWidth="0.5" strokeDasharray="1.5 1.5" fill="none" />
+              <path d="M 50 50 L 65 15" stroke="rgba(203,213,225,0.3)" strokeWidth="0.5" strokeDasharray="1.5 1.5" fill="none" />
+              <path d="M 50 50 L 65 85" stroke="rgba(203,213,225,0.3)" strokeWidth="0.5" strokeDasharray="1.5 1.5" fill="none" />
             </svg>
 
             {/* ── AI Brain Center Hub ── */}
@@ -1150,7 +1138,7 @@ export default function Home() {
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <div style={{ width: "36px", height: "36px", borderRadius: "0.5rem", background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <span style={{ fontSize: "1rem" }}>💊</span>
+                          <span style={{ display: "flex", color: "#6366f1" }}>{Icons.pill}</span>
                         </div>
                         <div>
                           <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#0f172a" }}>Paracetamol 500mg</div>
@@ -1176,7 +1164,7 @@ export default function Home() {
                     boxShadow: "0 8px 24px rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.1)",
                     display: "flex", alignItems: "center", gap: "0.4rem",
                   }}>
-                    <span style={{ fontSize: "0.85rem" }}>🤖</span>
+                    <span style={{ display: "flex", color: "#6366f1" }}>{Icons.bot}</span>
                     <div>
                       <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#6366f1" }}>AI Prediction</div>
                       <div style={{ fontSize: "0.58rem", color: "#64748b" }}>Reorder in 5 days</div>
@@ -1189,7 +1177,7 @@ export default function Home() {
                     boxShadow: "0 6px 20px rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.04)",
                     display: "flex", alignItems: "center", gap: "0.35rem",
                   }}>
-                    <span style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem" }}>✅</span>
+                    <span style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", color: "#16a34a" }}>{Icons.check}</span>
                     <span style={{ fontSize: "0.58rem", fontWeight: 600, color: "#0f172a" }}>Effective<br/>monitoring</span>
                   </div>
                 </div>
@@ -1216,10 +1204,10 @@ export default function Home() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   {[
-                    { label: "Drug-herb interaction", color: "#f43f5e", bg: "#fff1f2", icon: "🌿" },
-                    { label: "Drug-disease interaction", color: "#f59e0b", bg: "#fffbeb", icon: "🏥" },
-                    { label: "Drug-drug interaction", color: "#ef4444", bg: "#fef2f2", icon: "💊" },
-                    { label: "Drug-allergy interaction", color: "#a855f7", bg: "#faf5ff", icon: "⚠️" },
+                    { label: "Drug-herb interaction", color: "#f43f5e", bg: "#fff1f2", icon: Icons.leaf },
+                    { label: "Drug-disease interaction", color: "#f59e0b", bg: "#fffbeb", icon: Icons.heartPulse },
+                    { label: "Drug-drug interaction", color: "#ef4444", bg: "#fef2f2", icon: Icons.pill },
+                    { label: "Drug-allergy interaction", color: "#a855f7", bg: "#faf5ff", icon: Icons.alertTriangle },
                   ].map((item, i) => (
                     <div key={item.label} className="ai-feat-alert-row" style={{
                       display: "flex", alignItems: "center", gap: "0.5rem",
@@ -1228,7 +1216,7 @@ export default function Home() {
                       border: `1px solid ${item.color}20`,
                       animationDelay: `${i * 0.15}s`,
                     }}>
-                      <span style={{ fontSize: "0.85rem" }}>{item.icon}</span>
+                      <span style={{ display: "flex", color: item.color }}>{item.icon}</span>
                       <span style={{ fontSize: "0.72rem", fontWeight: 600, color: item.color }}>{item.label}</span>
                       <svg style={{ marginLeft: "auto" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={item.color} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                     </div>
@@ -1262,13 +1250,13 @@ export default function Home() {
                 <p style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "1.5rem", lineHeight: 1.6 }}>Connect directly with distributors and healthcare providers</p>
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.75rem", padding: "1rem 0" }}>
-                  <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "linear-gradient(135deg, #dbeafe, #93c5fd)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(59,130,246,0.15)", border: "2px solid white", fontSize: "1.3rem" }}>👨‍⚕️</div>
+                  <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "linear-gradient(135deg, #dbeafe, #93c5fd)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(59,130,246,0.15)", border: "2px solid white", color: "#3b82f6" }}><span style={{ transform: "scale(1.3)", display: "flex" }}>{Icons.user}</span></div>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.2rem" }}>
                     <div style={{ width: "20px", height: "2px", background: "#cbd5e1" }} />
                     <svg width="8" height="8" viewBox="0 0 8 8" fill="#94a3b8"><path d="M0 0L8 4L0 8z"/></svg>
                     <div style={{ width: "20px", height: "2px", background: "#cbd5e1" }} />
                   </div>
-                  <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "linear-gradient(135deg, #d1fae5, #6ee7b7)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(16,185,129,0.15)", border: "2px solid white", fontSize: "1.3rem" }}>🏪</div>
+                  <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "linear-gradient(135deg, #d1fae5, #6ee7b7)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(16,185,129,0.15)", border: "2px solid white", color: "#059669" }}><span style={{ transform: "scale(1.3)", display: "flex" }}>{Icons.store}</span></div>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.2rem" }}>
                     <div style={{ width: "20px", height: "2px", background: "#cbd5e1" }} />
                     <svg width="8" height="8" viewBox="0 0 8 8" fill="#94a3b8"><path d="M0 0L8 4L0 8z"/></svg>
@@ -1299,9 +1287,9 @@ export default function Home() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   {[
-                    { emoji: "🎉", title: "Great job!", desc: "Inventory sync 98% accurate this month", bg: "#dcfce7", color: "#15803d" },
-                    { emoji: "⚠️", title: "Expiry Alert", desc: "12 items expiring in next 30 days", bg: "#fef3c7", color: "#92400e" },
-                    { emoji: "💊", title: "Low Stock", desc: "Reorder Amoxicillin — 45 units left", bg: "#dbeafe", color: "#1d4ed8" },
+                    { icon: Icons.sparkle, title: "Great job!", desc: "Inventory sync 98% accurate this month", bg: "#dcfce7", color: "#15803d" },
+                    { icon: Icons.alertTriangle, title: "Expiry Alert", desc: "12 items expiring in next 30 days", bg: "#fef3c7", color: "#92400e" },
+                    { icon: Icons.pill, title: "Low Stock", desc: "Reorder Amoxicillin — 45 units left", bg: "#dbeafe", color: "#1d4ed8" },
                   ].map((notif, i) => (
                     <div key={notif.title} className="ai-feat-notif" style={{
                       display: "flex", alignItems: "flex-start", gap: "0.6rem",
@@ -1314,8 +1302,8 @@ export default function Home() {
                       <span style={{
                         width: "28px", height: "28px", borderRadius: "0.5rem", flexShrink: 0,
                         background: notif.bg, display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: "0.8rem",
-                      }}>{notif.emoji}</span>
+                        color: notif.color,
+                      }}>{notif.icon}</span>
                       <div>
                         <div style={{ fontSize: "0.72rem", fontWeight: 700, color: notif.color }}>{notif.title}</div>
                         <div style={{ fontSize: "0.62rem", color: "#64748b", lineHeight: 1.4 }}>{notif.desc}</div>
@@ -1639,98 +1627,148 @@ export default function Home() {
             </div>
             <h2 className={why.inView ? "animate-fade-in-up delay-100" : "opacity-0"}
               style={{ fontSize: "clamp(2.5rem, 5vw, 3.5rem)", fontWeight: 800, color: "var(--color-on-surface)", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
-              Everything your pharmacy needs,<br /><span className="gradient-primary-text">intelligently connected</span>
+              Real pharmacy problems,<br /><span className="gradient-primary-text">completely solved.</span>
             </h2>
             <p className={why.inView ? "animate-fade-in-up delay-200" : "opacity-0"}
               style={{ marginTop: "1.5rem", fontSize: "1.125rem", color: "var(--color-on-surface-variant)", lineHeight: 1.7 }}>
-              Move beyond spreadsheets and outdated POS systems. ShelfCure brings modern AI to every corner of your pharmacy workflow.
+              The six biggest pain points pharmacists face every day — and exactly how ShelfCure eliminates each one.
             </p>
           </div>
 
           <div className="bento-grid">
-            {/* ROW 1: Span 2 + Span 1 */}
+
+            {/* ROW 1 — AI Billing (span-2) + Expiry Control (span-1) */}
             <div className={`bento-card span-2 ${why.inView ? "animate-fade-in-up delay-200" : "opacity-0"}`}>
-               <div className="bento-glow" style={{ background: "rgba(129, 140, 248, 0.15)" }}></div>
-               <div className="bento-content" style={{ display: "flex", flexDirection: "row", gap: "2rem", alignItems: "center" }}>
-                  <div style={{ flex: 1 }}>
-                    <div className="bento-icon" style={{ background: "rgba(99, 102, 241, 0.1)", color: "#6366f1" }}>{Icons.chart}</div>
-                    <h3>Gemini OCR Extraction</h3>
-                    <p>Zero-typing! Just load your supplier invoice — we automatically extract GSTs, Batches, and Subtotals natively using advanced AI vision models in milliseconds.</p>
+              <div className="bento-glow" style={{ background: "rgba(99,102,241,0.15)" }} />
+              <div className="bento-content" style={{ display: "flex", flexDirection: "row", gap: "2rem", alignItems: "center" }}>
+                <div style={{ flex: 1 }}>
+                  <div className="bento-icon" style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1" }}>{Icons.zap}</div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.2rem 0.65rem", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "var(--radius-full)", marginBottom: "0.75rem" }}>
+                    <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "#dc2626" }}>Problem: 2–3 hours wasted on billing daily</span>
                   </div>
-                  <div style={{ flex: 1 }} className="hide-mobile">
-                     <div style={{ padding: "1.5rem", background: "var(--color-surface-container-lowest)", borderRadius: "1rem", boxShadow: "0 10px 30px rgba(0,0,0,0.05)", border: "1px solid var(--color-surface-variant)" }}>
-                        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-                           <div style={{ width: 12, height: 12, borderRadius: 6, background: "#ef4444" }}></div>
-                           <div style={{ width: 12, height: 12, borderRadius: 6, background: "#f59e0b" }}></div>
-                           <div style={{ width: 12, height: 12, borderRadius: 6, background: "#10b981" }}></div>
-                        </div>
-                        <div className="animate-pulse-glow" style={{ height: "6px", width: "40%", background: "#e2e8f0", borderRadius: "3px", marginBottom: "0.75rem" }}></div>
-                        <div className="animate-pulse-glow delay-100" style={{ height: "6px", width: "70%", background: "#6366f1", borderRadius: "3px", marginBottom: "0.75rem" }}></div>
-                        <div className="animate-pulse-glow delay-200" style={{ height: "6px", width: "50%", background: "#a78bfa", borderRadius: "3px" }}></div>
-                     </div>
+                  <h3>Scan Any Bill. Zero Typing.</h3>
+                  <p>AI reads any purchase bill in under 8 seconds. 50,000+ medicine database auto-fills batch numbers, HSN codes, MRP, and GST — instantly. Phone or machine barcode scanner included.</p>
+                </div>
+                <div style={{ flex: 1 }} className="hide-mobile">
+                  <div style={{ padding: "1.25rem", background: "linear-gradient(135deg, #1e1b4b, #312e81)", borderRadius: "1rem", position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, transparent, rgba(129,140,248,0.9), transparent)", animation: "scan-beam 2.5s linear infinite" }} />
+                    <div style={{ fontSize: "0.55rem", fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: "0.75rem", letterSpacing: "0.05em" }}>AI Extracting Invoice</div>
+                    {[{ name: "Paracetamol 500mg", tag: "Extracted", c: "#10b981" }, { name: "Amoxicillin 250mg", tag: "Verified", c: "#818cf8" }].map((item, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.4rem 0", borderTop: i > 0 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+                        <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.75)", fontWeight: 500 }}>{item.name}</span>
+                        <span style={{ fontSize: "0.58rem", fontWeight: 700, padding: "0.1rem 0.45rem", borderRadius: "var(--radius-full)", background: `${item.c}22`, color: item.c }}>{item.tag}</span>
+                      </div>
+                    ))}
+                    <div style={{ marginTop: "0.875rem", height: 4, background: "rgba(255,255,255,0.08)", borderRadius: "2px", overflow: "hidden" }}>
+                      <div style={{ width: "87%", height: "100%", background: "linear-gradient(90deg, #818cf8, #6366f1)", borderRadius: "2px" }} />
+                    </div>
                   </div>
-               </div>
+                </div>
+              </div>
             </div>
 
             <div className={`bento-card ${why.inView ? "animate-fade-in-up delay-300" : "opacity-0"}`}>
-               <div className="bento-glow" style={{ background: "rgba(14, 165, 233, 0.15)" }}></div>
-               <div className="bento-content">
-                  <div className="bento-icon" style={{ background: "rgba(14, 165, 233, 0.1)", color: "#0ea5e9" }}>{Icons.box}</div>
-                  <h3>1-Click Inventory Match</h3>
-                  <p>Instantly cross-reference scanned bills with existing database stocks & identify expiring products safely.</p>
-               </div>
+              <div className="bento-glow" style={{ background: "rgba(245,158,11,0.15)" }} />
+              <div className="bento-content">
+                <div className="bento-icon" style={{ background: "rgba(245,158,11,0.1)", color: "#f59e0b" }}>{Icons.alertTriangle}</div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.2rem 0.65rem", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "var(--radius-full)", marginBottom: "0.75rem" }}>
+                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "#dc2626" }}>Problem: Expired stock found too late</span>
+                </div>
+                <h3>Never Expire Stock Again.</h3>
+                <p>Batch-wise expiry tracking with 30-day advance alerts. Smart reorder points. Dead stock identified before it costs you.</p>
+              </div>
             </div>
 
-            {/* ROW 2: Span 1 + Span 2 */}
+            {/* ROW 2 — GST Reports (span-1) + Customer & Credit (span-2) */}
             <div className={`bento-card ${why.inView ? "animate-fade-in-up delay-400" : "opacity-0"}`}>
-               <div className="bento-glow" style={{ background: "rgba(245, 158, 11, 0.15)" }}></div>
-               <div className="bento-content">
-                  <div className="bento-icon" style={{ background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" }}>{Icons.zap}</div>
-                  <h3>Lightning Billing</h3>
-                  <p>Complete POS transactions in seconds with automated GST calculations and fast search capabilities.</p>
-               </div>
+              <div className="bento-glow" style={{ background: "rgba(16,185,129,0.15)" }} />
+              <div className="bento-content">
+                <div className="bento-icon" style={{ background: "rgba(16,185,129,0.1)", color: "#10b981" }}>{Icons.fileText}</div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.2rem 0.65rem", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "var(--radius-full)", marginBottom: "0.75rem" }}>
+                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "#dc2626" }}>Problem: GST filing takes days every month</span>
+                </div>
+                <h3>One-Click GST Reports.</h3>
+                <p>CGST/SGST/IGST auto-split on every sale. GSTR-1 ready report in seconds. Annual GST PDF downloaded anytime.</p>
+              </div>
             </div>
 
             <div className={`bento-card span-2 ${why.inView ? "animate-fade-in-up delay-500" : "opacity-0"}`}>
-               <div className="bento-glow" style={{ background: "rgba(236, 72, 153, 0.15)" }}></div>
-               <div className="bento-content" style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "2rem" }}>
-                 <div style={{ flex: 1 }}>
-                    <div className="bento-icon" style={{ background: "rgba(236, 72, 153, 0.1)", color: "#ec4899" }}>{Icons.phone}</div>
-                    <h3>Smartphone Scanner</h3>
-                    <p>No native hardware required. Run our WebSocket server to transform any local iPhone or Android device into a lightning-fast edge-synced barcode scanner.</p>
-                 </div>
-                 <div style={{ flex: "0 0 120px", display: "flex", justifyContent: "center" }} className="hide-mobile">
-                    <div style={{ width: "80px", height: "160px", background: "#f8fafc", borderRadius: "1.25rem", border: "6px solid #1e293b", position: "relative", overflow: "hidden", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}>
-                        <div className="animate-float" style={{ position: "absolute", top: "40%", left: 0, right: 0, height: "2px", background: "#ec4899", boxShadow: "0 0 12px #ec4899" }}></div>
+              <div className="bento-glow" style={{ background: "rgba(139,92,246,0.15)" }} />
+              <div className="bento-content" style={{ display: "flex", flexDirection: "row", gap: "2rem", alignItems: "center" }}>
+                <div style={{ flex: 1 }}>
+                  <div className="bento-icon" style={{ background: "rgba(139,92,246,0.1)", color: "#8b5cf6" }}>{Icons.users}</div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.2rem 0.65rem", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "var(--radius-full)", marginBottom: "0.75rem" }}>
+                    <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "#dc2626" }}>Problem: Regular patients wait in long queues</span>
+                  </div>
+                  <h3>Every Regular Served in Seconds.</h3>
+                  <p>Save each customer&apos;s regular medicines. Bill them with one tap. Track credit dues with a live ledger. Show full purchase history at billing.</p>
+                </div>
+                <div style={{ flex: "0 0 170px" }} className="hide-mobile">
+                  <div style={{ padding: "1rem", background: "var(--color-surface-container-lowest)", borderRadius: "0.875rem", border: "1px solid var(--color-surface-variant)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg, #8b5cf6, #a78bfa)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>
+                        <span style={{ transform: "scale(0.7)", display: "flex" }}>{Icons.user}</span>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--color-on-surface)" }}>Ramesh K.</div>
+                        <div style={{ fontSize: "0.58rem", color: "#ef4444", fontWeight: 600 }}>₹2,400 due</div>
+                      </div>
                     </div>
-                 </div>
-               </div>
+                    <div style={{ fontSize: "0.6rem", fontWeight: 600, color: "var(--color-on-surface-variant)", marginBottom: "0.4rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Regular Medicines</div>
+                    {["Metformin 500mg", "Amlodipine 5mg"].map(med => (
+                      <div key={med} style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.2rem 0" }}>
+                        <span style={{ color: "#8b5cf6", display: "flex", transform: "scale(0.75)" }}>{Icons.pill}</span>
+                        <span style={{ fontSize: "0.65rem", color: "var(--color-on-surface-variant)" }}>{med}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* ROW 3: Span 2 + Span 1 */}
+            {/* ROW 3 — Reports & Profit (span-2) + Promotions (span-1) */}
             <div className={`bento-card span-2 ${why.inView ? "animate-fade-in-up delay-600" : "opacity-0"}`}>
-               <div className="bento-glow" style={{ background: "rgba(16, 185, 129, 0.15)" }}></div>
-               <div className="bento-content" style={{ display: "flex", flexDirection: "row", gap: "2rem", alignItems: "center" }}>
-                  <div style={{ flex: 1 }}>
-                     <div className="bento-icon" style={{ background: "rgba(16, 185, 129, 0.1)", color: "#10b981" }}>{Icons.shield}</div>
-                     <h3>Offline Resilience</h3>
-                     <p>Your pharmacy never stops. Data stays physically secured in local SQLite and gracefully syncs to Supabase on reconnection without dropping a single sale.</p>
+              <div className="bento-glow" style={{ background: "rgba(59,130,246,0.15)" }} />
+              <div className="bento-content" style={{ display: "flex", flexDirection: "row", gap: "2rem", alignItems: "center" }}>
+                <div style={{ flex: 1 }}>
+                  <div className="bento-icon" style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6" }}>{Icons.trendingUp}</div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.2rem 0.65rem", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "var(--radius-full)", marginBottom: "0.75rem" }}>
+                    <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "#dc2626" }}>Problem: No idea if today was profitable</span>
                   </div>
-                  <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "1rem" }} className="hide-mobile">
-                     <div style={{ flex: 1, padding: "1rem", background: "white", borderRadius: "0.75rem", border: "1px solid #e2e8f0", textAlign: "center", color: "#10b981", fontWeight: 600, fontSize: "0.875rem" }}>SQLite</div>
-                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: "#94a3b8" }}><path d="M17 8l4 4-4 4"/><path d="M3 12h18"/></svg>
-                     <div style={{ flex: 1, padding: "1rem", background: "#f8fafc", borderRadius: "0.75rem", border: "1px solid #cbd5e1", textAlign: "center", color: "#64748b", fontWeight: 600, fontSize: "0.875rem" }}>Cloud</div>
+                  <h3>Your Numbers, Every Day.</h3>
+                  <p>Daily sales, Profit &amp; Loss, expense analysis, stock valuation, expiry, sales return and purchase return reports — all generated automatically. PDF or Excel.</p>
+                </div>
+                <div style={{ flex: 1 }} className="hide-mobile">
+                  <div style={{ padding: "1.25rem", background: "var(--color-surface-container-lowest)", borderRadius: "1rem", border: "1px solid var(--color-surface-variant)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.875rem" }}>
+                      <span style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--color-on-surface-variant)" }}>This Week</span>
+                      <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#10b981" }}>+12% profit ↑</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "52px" }}>
+                      {[40, 60, 45, 75, 55, 90, 70].map((h, i) => (
+                        <div key={i} style={{ flex: 1, height: `${h}%`, background: i === 5 ? "#3b82f6" : "#e2e8f0", borderRadius: "2px 2px 0 0", transition: "height 0.3s ease" }} />
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.4rem" }}>
+                      <span style={{ fontSize: "0.55rem", color: "var(--color-on-surface-variant)" }}>Mon</span>
+                      <span style={{ fontSize: "0.55rem", color: "#3b82f6", fontWeight: 700 }}>Sat</span>
+                      <span style={{ fontSize: "0.55rem", color: "var(--color-on-surface-variant)" }}>Sun</span>
+                    </div>
                   </div>
-               </div>
+                </div>
+              </div>
             </div>
 
             <div className={`bento-card ${why.inView ? "animate-fade-in-up delay-600" : "opacity-0"}`}>
-               <div className="bento-glow" style={{ background: "rgba(99, 102, 241, 0.15)" }}></div>
-               <div className="bento-content">
-                  <div className="bento-icon" style={{ background: "rgba(99, 102, 241, 0.1)", color: "#6366f1" }}>{Icons.users}</div>
-                  <h3>Customer Credit</h3>
-                  <p>Track patient outstanding dues, issue delivery challans easily, and process seamless returns.</p>
-               </div>
+              <div className="bento-glow" style={{ background: "rgba(245,158,11,0.15)" }} />
+              <div className="bento-content">
+                <div className="bento-icon" style={{ background: "rgba(245,158,11,0.1)", color: "#f59e0b" }}>{Icons.gift}</div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.2rem 0.65rem", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "var(--radius-full)", marginBottom: "0.75rem" }}>
+                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "#dc2626" }}>Problem: Festival seasons pass without offers</span>
+                </div>
+                <h3>Turn Festivals Into Revenue.</h3>
+                <p>Festival and offer promotions (Buy X Get Y Free) that apply automatically at billing. Track every use and rupee earned per campaign.</p>
+              </div>
             </div>
 
           </div>
@@ -1837,6 +1875,125 @@ export default function Home() {
         `}</style>
       </section>
 
+
+      {/* ───────────────────── ALL FEATURES OVERVIEW ───────────────────── */}
+      <section style={{ padding: "8rem 0", background: "var(--color-background)", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 50% at 50% 50%, rgba(99,102,241,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "4rem" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: "var(--radius-full)", padding: "0.35rem 1rem", marginBottom: "1.5rem" }}>
+              <span style={{ display: "flex", color: "#6366f1" }}>{Icons.sparkle}</span>
+              <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", textTransform: "uppercase" }}>Complete Feature Set</span>
+            </div>
+            <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800, color: "var(--color-on-surface)", letterSpacing: "-0.03em", marginBottom: "1rem" }}>
+              One software. Every pharmacy need.
+            </h2>
+            <p style={{ fontSize: "1.1rem", color: "var(--color-on-surface-variant)", maxWidth: "560px", margin: "0 auto" }}>
+              From AI-powered billing to GST compliance — every tool your pharmacy needs, built into a single offline-first desktop app.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem", marginBottom: "3rem" }}>
+            {[
+              {
+                icon: Icons.zap, color: "#6366f1", bg: "rgba(99,102,241,0.1)",
+                label: "Smart Billing", href: "/features#billing",
+                features: ["AI-powered bill scanning", "Barcode scanner support", "Edit bill after saving", "Sales & purchase returns", "Quick favourites list", "Auto medicine suggestions"],
+              },
+              {
+                icon: Icons.box, color: "#0ea5e9", bg: "rgba(14,165,233,0.1)",
+                label: "Inventory Control", href: "/features#inventory",
+                features: ["12,000+ medicine database", "Expiry date alerts", "Low stock reorder alerts", "Batch & lot tracking", "Auto-generate challan", "Real-time stock levels"],
+              },
+              {
+                icon: Icons.fileText, color: "#10b981", bg: "rgba(16,185,129,0.1)",
+                label: "GST & Compliance", href: "/features#gst",
+                features: ["GSTR-1 ready reports", "Auto HSN code mapping", "CGST/SGST/IGST split", "Annual PDF export", "Tax summary dashboard", "One-click filing prep"],
+              },
+              {
+                icon: Icons.trendingUp, color: "#f59e0b", bg: "rgba(245,158,11,0.1)",
+                label: "Reports & Profit", href: "/features#reports",
+                features: ["Daily profit & loss", "Top selling medicines", "Slow-moving stock report", "Expense tracker", "Net profit trend chart", "Monthly comparison"],
+              },
+              {
+                icon: Icons.user, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)",
+                label: "Customer & Credit", href: "/features#customers",
+                features: ["Credit ledger per customer", "Regular medicine profiles", "Outstanding dues tracker", "One-click rebill", "Customer visit history", "SMS due reminders"],
+              },
+              {
+                icon: Icons.store, color: "#ec4899", bg: "rgba(236,72,153,0.1)",
+                label: "Supplier Management", href: "/features#suppliers",
+                features: ["Supplier ledger & history", "Purchase return tracking", "Payment due alerts", "Multi-supplier comparison", "Order history log", "Pending challan view"],
+              },
+              {
+                icon: Icons.sparkle, color: "#f97316", bg: "rgba(249,115,22,0.1)",
+                label: "Promotions", href: "/features#promotions",
+                features: ["Festival discount offers", "Buy X get Y free", "Scheme management", "Promotion usage tracking", "Date-range scheduling", "Category-level offers"],
+              },
+            ].map((cat) => (
+              <a
+                key={cat.label}
+                href={cat.href}
+                style={{
+                  display: "block",
+                  background: "var(--color-surface)",
+                  border: "1px solid var(--color-outline-variant)",
+                  borderRadius: "var(--radius-xl)",
+                  padding: "1.75rem",
+                  textDecoration: "none",
+                  transition: "border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = cat.color; (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; (e.currentTarget as HTMLElement).style.boxShadow = `0 12px 32px ${cat.bg}`; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--color-outline-variant)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "none"; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.875rem", marginBottom: "1.25rem" }}>
+                  <div style={{ width: "2.5rem", height: "2.5rem", borderRadius: "0.75rem", background: cat.bg, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color, flexShrink: 0 }}>
+                    {cat.icon}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--color-on-surface)" }}>{cat.label}</div>
+                    <div style={{ fontSize: "0.75rem", color: cat.color, fontWeight: 600 }}>View details →</div>
+                  </div>
+                </div>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {cat.features.map(f => (
+                    <li key={f} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--color-on-surface-variant)" }}>
+                      <span style={{ display: "flex", color: cat.color, flexShrink: 0 }}>{Icons.check}</span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </a>
+            ))}
+          </div>
+
+          <div style={{ textAlign: "center" }}>
+            <a
+              href="/features"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                background: "var(--color-primary)",
+                color: "#fff",
+                padding: "0.875rem 2rem",
+                borderRadius: "var(--radius-full)",
+                fontWeight: 600,
+                fontSize: "0.95rem",
+                textDecoration: "none",
+                transition: "opacity 0.2s ease",
+              }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = "0.85")}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = "1")}
+            >
+              <span style={{ display: "flex" }}>{Icons.sparkle}</span>
+              Explore all features in detail
+            </a>
+          </div>
+        </div>
+      </section>
 
       {/* ───────────────────── HOW IT WORKS ───────────────────── */}
       <section
@@ -2086,65 +2243,36 @@ export default function Home() {
                 reduce waste, and grow revenue.
               </p>
 
-              <form onSubmit={handleCTASubmit} style={{
+              <div style={{
                 display: "flex", alignItems: "center", justifyContent: "center",
                 gap: "0.75rem", maxWidth: "480px", margin: "0 auto", flexWrap: "wrap",
               }}>
-                <input
-                  type="email"
-                  required
-                  placeholder="Enter your email"
+                <Link
+                  href="/panel/register"
                   style={{
-                    flex: 1, minWidth: "240px",
-                    padding: "0.875rem 1.25rem",
-                    borderRadius: "var(--radius-full)",
-                    border: "1.5px solid rgba(255,255,255,0.25)",
-                    background: "rgba(255,255,255,0.12)",
-                    color: "#fff",
-                    fontFamily: "var(--font-body)",
-                    fontSize: "0.9375rem",
-                    outline: "none",
-                    transition: "all 0.25s ease",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.5)";
-                    e.currentTarget.style.background = "rgba(255,255,255,0.18)";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
-                    e.currentTarget.style.background = "rgba(255,255,255,0.12)";
-                  }}
-                />
-                <button
-                  type="submit"
-                  disabled={isSubmittingCTA || ctaSuccess}
-                  style={{
-                  padding: "0.875rem 2rem",
+                  padding: "1rem 2.5rem",
                   borderRadius: "var(--radius-full)",
-                  border: "none",
-                  background: ctaSuccess ? "#10b981" : "#fff",
-                  color: ctaSuccess ? "#fff" : "#4f46e5",
+                  background: "#fff",
+                  color: "#4f46e5",
                   fontFamily: "var(--font-body)",
                   fontWeight: 600,
-                  fontSize: "0.9375rem",
-                  cursor: (isSubmittingCTA || ctaSuccess) ? "default" : "pointer",
+                  fontSize: "1rem",
+                  textDecoration: "none",
+                  boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
                   transition: "all 0.3s ease",
-                  display: "flex", alignItems: "center", gap: "0.5rem",
-                }}
+                  }}
                   onMouseEnter={(e) => {
-                    if (isSubmittingCTA || ctaSuccess) return;
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0px 4px 16px rgba(0,0,0,0.15)";
+                    e.currentTarget.style.boxShadow = "0 12px 24px rgba(0,0,0,0.15)";
                   }}
                   onMouseLeave={(e) => {
-                    if (isSubmittingCTA || ctaSuccess) return;
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.1)";
                   }}
                 >
-                  {ctaSuccess ? "Success! 🎉" : isSubmittingCTA ? "Joining..." : <>Get Started {Icons.arrowRight}</>}
-                </button>
-              </form>
+                  Create Free Account
+                </Link>
+              </div>
 
               <p style={{ fontSize: "0.8rem", fontWeight: 500, color: "rgba(255,255,255,0.5)", marginTop: "1rem" }}>
                 Free 7-day trial • No credit card required
