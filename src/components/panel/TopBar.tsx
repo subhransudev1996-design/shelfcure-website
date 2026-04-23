@@ -182,8 +182,7 @@ export function TopBar() {
           <Menu style={{ width: 18, height: 18 }} />
         </button>
         <div>
-          <p style={{ margin: 0, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#334155', lineHeight: 1 }}>{pharmacyName}</p>
-          <h1 style={{ margin: '3px 0 0', fontSize: 13, fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.01em', lineHeight: 1 }}>{breadcrumb}</h1>
+          <h1 style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.01em', lineHeight: 1 }}>{breadcrumb}</h1>
         </div>
       </div>
 
