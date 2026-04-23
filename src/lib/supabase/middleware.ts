@@ -13,7 +13,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({ request });
@@ -25,29 +25,10 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh session — IMPORTANT: must not be removed
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Protect /panel/* routes (except login and register)
-  const isPanel = request.nextUrl.pathname.startsWith('/panel');
-  const isAuthPage =
-    request.nextUrl.pathname === '/panel/login' ||
-    request.nextUrl.pathname === '/panel/register';
-
-  if (isPanel && !isAuthPage && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/panel/login';
-    return NextResponse.redirect(url);
-  }
-
-  // Redirect logged-in users away from auth pages
-  if (isAuthPage && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/panel';
-    return NextResponse.redirect(url);
-  }
+  // Refresh session — IMPORTANT: must not be removed.
+  // This keeps the auth cookies fresh. We intentionally do NOT redirect
+  // here to avoid race conditions with the client-side layout auth check.
+  await supabase.auth.getUser();
 
   return supabaseResponse;
 }
