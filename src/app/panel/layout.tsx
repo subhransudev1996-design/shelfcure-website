@@ -16,7 +16,6 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
-  const initialized = useRef(false);
 
   const isAuthPage = pathname === '/panel/login' || pathname === '/panel/register';
 
@@ -24,25 +23,35 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const setPharmacy = usePanelStore((s) => s.setPharmacy);
   const sidebarCollapsed = usePanelStore((s) => s.sidebarCollapsed);
 
+  // Track whether we've successfully loaded user data this session
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
-    // Prevent duplicate initialization (React StrictMode double-invoke)
-    if (initialized.current) return;
-    initialized.current = true;
+    // On auth pages, just stop loading and skip initialization
+    if (isAuthPage) {
+      setLoading(false);
+      return;
+    }
+
+    // If we already have user data in the store, don't re-fetch
+    // (this prevents re-fetching on every panel page navigation)
+    if (hasInitialized.current) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
 
     async function initialize() {
-      if (isAuthPage) {
-        setLoading(false);
-        return;
-      }
-
+      setLoading(true);
       try {
-        // First try getSession() for a quick cached check
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
+        if (cancelled) return;
+
         if (!session?.user) {
-          // No cached session — redirect to login
           router.push('/panel/login');
           return;
         }
@@ -57,6 +66,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           .eq('is_active', true)
           .maybeSingle();
 
+        if (cancelled) return;
+
         if (!userRecord) {
           router.push('/panel/login');
           return;
@@ -69,6 +80,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           .eq('id', userRecord.pharmacy_id)
           .maybeSingle();
 
+        if (cancelled) return;
+
         setUser({
           id: String(userRecord.id),
           auth_user_id: String(userRecord.auth_user_id),
@@ -78,22 +91,30 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           is_active: userRecord.is_active,
         });
 
-        // Always use the pharmacy_id from the user record as fallback
         const pId = pharmacy?.id ?? userRecord.pharmacy_id;
         const pName = pharmacy?.name ?? 'My Pharmacy';
         setPharmacy(pId ? String(pId) : null, pName);
+
+        hasInitialized.current = true;
       } catch (err) {
         console.error('Panel init error:', err);
-        // Only redirect on actual auth failures, not transient network errors
-        router.push('/panel/login');
+        if (!cancelled) {
+          router.push('/panel/login');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     initialize();
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAuthPage]);
 
   // ── Loading screen ──────────────────────────────────────────
   if (loading) {
