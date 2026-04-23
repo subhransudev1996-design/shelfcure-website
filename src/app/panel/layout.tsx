@@ -36,13 +36,13 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
       }
 
       try {
-        // Use getSession() instead of getUser() to avoid auth-token lock contention.
-        // getSession() reads from the local cache and does not make a network request.
+        // First try getSession() for a quick cached check
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
         if (!session?.user) {
+          // No cached session — redirect to login
           router.push('/panel/login');
           return;
         }
@@ -84,6 +84,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         setPharmacy(pId ? String(pId) : null, pName);
       } catch (err) {
         console.error('Panel init error:', err);
+        // Only redirect on actual auth failures, not transient network errors
         router.push('/panel/login');
       } finally {
         setLoading(false);
@@ -91,17 +92,6 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     }
 
     initialize();
-
-    // Listen for auth state changes (sign-out only)
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        router.push('/panel/login');
-      }
-    });
-
-    return () => subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

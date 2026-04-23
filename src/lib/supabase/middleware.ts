@@ -25,10 +25,13 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh session — IMPORTANT: must not be removed.
-  // This keeps the auth cookies fresh. We intentionally do NOT redirect
-  // here to avoid race conditions with the client-side layout auth check.
-  await supabase.auth.getUser();
+  // Refresh session — wrapped in try-catch so a failed token refresh
+  // doesn't accidentally clear the auth cookies and log the user out.
+  try {
+    await supabase.auth.getUser();
+  } catch {
+    // Silently ignore — the client-side layout will handle auth state.
+  }
 
   return supabaseResponse;
 }
