@@ -60,7 +60,23 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         return;
       }
 
-      // Fetch user record
+      // First, check if this is a super admin
+      const { data: superAdmin, error: superError } = await supabase
+        .from('super_admins')
+        .select('id')
+        .eq('auth_user_id', authUser.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (superAdmin) {
+        console.log('[PanelLayout] Super admin detected, redirecting to /admin');
+        router.replace('/admin');
+        setLoading(false);
+        setAuthChecked(true);
+        return;
+      }
+
+      // Fetch normal user record
       const { data: userRecord, error: userError } = await supabase
         .from('users')
         .select('id, auth_user_id, full_name, email, role, is_active, pharmacy_id')
@@ -78,7 +94,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           auth_user_id: authUser.id,
           full_name: authUser.user_metadata?.full_name || authUser.email || 'User',
           email: authUser.email ?? null,
-          role: 'admin',
+          role: 'store_admin', // Default to store_admin instead of admin
           is_active: true,
         });
         setPharmacy(null, 'My Pharmacy');
@@ -96,7 +112,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           auth_user_id: String(userRecord.auth_user_id),
           full_name: userRecord.full_name,
           email: userRecord.email ?? null,
-          role: userRecord.role,
+          role: userRecord.role as 'store_admin' | 'store_manager' | 'cashier',
           is_active: userRecord.is_active,
         });
 

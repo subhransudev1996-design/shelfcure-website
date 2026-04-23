@@ -44,9 +44,19 @@ export default function PanelLoginPage() {
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
       if (authError) { setError(friendlyError(authError.message)); setLoading(false); return; }
 
-      // Use hard navigation to guarantee cookies are sent with the request.
-      // router.push + router.refresh can cause race conditions.
-      window.location.href = '/panel';
+      // Check if super admin
+      const { data: superAdmin } = await supabase
+        .from('super_admins')
+        .select('id')
+        .eq('auth_user_id', authError ? '' : (await supabase.auth.getUser()).data.user?.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (superAdmin) {
+        window.location.href = '/admin';
+      } else {
+        window.location.href = '/panel';
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? friendlyError(err.message) : 'An unexpected error occurred');
       setLoading(false);

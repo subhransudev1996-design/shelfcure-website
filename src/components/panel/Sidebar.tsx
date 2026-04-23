@@ -31,27 +31,27 @@ const navSections = [
     label: 'Operations',
     items: [
       { label: 'Point of Sale', href: '/panel/pos', icon: ShoppingCart },
-      { label: 'Inventory', href: '/panel/inventory', icon: Package },
+      { label: 'Inventory', href: '/panel/inventory', icon: Package, roles: ['store_admin', 'store_manager'] },
       { label: 'Sales History', href: '/panel/sales', icon: Receipt },
       { label: 'Returns', href: '/panel/returns', icon: RotateCcw },
-      { label: 'Purchases', href: '/panel/purchases', icon: Truck },
+      { label: 'Purchases', href: '/panel/purchases', icon: Truck, roles: ['store_admin', 'store_manager'] },
     ],
   },
   {
     label: 'Business',
     items: [
       { label: 'Customers', href: '/panel/customers', icon: Users },
-      { label: 'Suppliers', href: '/panel/suppliers', icon: Building2 },
-      { label: 'Finance', href: '/panel/finance', icon: Wallet },
-      { label: 'Challans', href: '/panel/challans', icon: FileText },
-      { label: 'Promotions', href: '/panel/promotions', icon: Tag },
+      { label: 'Suppliers', href: '/panel/suppliers', icon: Building2, roles: ['store_admin', 'store_manager'] },
+      { label: 'Finance', href: '/panel/finance', icon: Wallet, roles: ['store_admin'] },
+      { label: 'Challans', href: '/panel/challans', icon: FileText, roles: ['store_admin', 'store_manager'] },
+      { label: 'Promotions', href: '/panel/promotions', icon: Tag, roles: ['store_admin', 'store_manager'] },
     ],
   },
   {
     label: 'Analytics',
     items: [
-      { label: 'Reports', href: '/panel/reports', icon: BarChart3 },
-      { label: 'Settings', href: '/panel/settings', icon: Settings },
+      { label: 'Reports', href: '/panel/reports', icon: BarChart3, roles: ['store_admin', 'store_manager'] },
+      { label: 'Settings', href: '/panel/settings', icon: Settings, roles: ['store_admin'] },
       { label: 'Support', href: '/panel/support', icon: LifeBuoy },
     ],
   },
@@ -84,6 +84,7 @@ export function Sidebar() {
   const collapsed = usePanelStore((s) => s.sidebarCollapsed);
   const toggleSidebar = usePanelStore((s) => s.toggleSidebar);
   const pharmacyName = usePanelStore((s) => s.pharmacyName);
+  const user = usePanelStore((s) => s.user);
   const [toggleHovered, setToggleHovered] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
@@ -150,7 +151,11 @@ export function Sidebar() {
           padding: '14px 10px',
           scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.05) transparent',
         }}>
-          {navSections.map((section, si) => (
+          {navSections.map((section, si) => {
+            const filteredItems = section.items.filter(item => !item.roles || (user?.role && item.roles.includes(user.role)));
+            if (filteredItems.length === 0) return null;
+
+            return (
             <div key={section.label} style={{ marginBottom: si < navSections.length - 1 ? 22 : 0 }}>
               {!collapsed && (
                 <p style={{
@@ -164,7 +169,7 @@ export function Sidebar() {
                 <div style={{ height: 1, background: BORDER, margin: '8px 8px 10px' }} />
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {section.items.map((item) => {
+                {filteredItems.map((item) => {
                   const active = isActive(item.href);
                   return (
                     <div key={item.href} style={{ position: 'relative' }}
@@ -222,7 +227,8 @@ export function Sidebar() {
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </nav>
 
         {/* ── Bottom: shortcut hint + collapse button ── */}

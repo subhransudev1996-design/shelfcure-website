@@ -129,7 +129,7 @@ export default function PanelRegisterPage() {
 
       const { error: userError } = await supabase.from('users').insert({
         pharmacy_id: pharmacy.id, auth_user_id: authData.user.id,
-        full_name: fullName, email, role: 'admin', is_active: true,
+        full_name: fullName, email, role: 'store_admin', is_active: true,
       });
 
       if (userError) { setError('Account setup incomplete: ' + userError.message); return; }

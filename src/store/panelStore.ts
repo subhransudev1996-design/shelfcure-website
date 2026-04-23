@@ -8,7 +8,7 @@ export interface PanelUser {
   auth_user_id: string;
   full_name: string;
   email: string | null;
-  role: string;
+  role: 'super_admin' | 'store_admin' | 'store_manager' | 'cashier';
   is_active: boolean;
 }
 

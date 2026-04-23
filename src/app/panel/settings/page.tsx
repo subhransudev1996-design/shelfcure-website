@@ -8,8 +8,9 @@ import {
   Save, Loader2, User, Settings as SettingsIcon, Building2,
   Users, Phone, Mail, FileText, MapPin, Building, ShieldCheck, 
   Map, Fingerprint, Lock, Shield, CheckCircle2, AlertCircle, ChevronRight,
-  MonitorSmartphone, Laptop, Smartphone
+  MonitorSmartphone, Laptop, Smartphone, UserPlus
 } from 'lucide-react';
+import Link from 'next/link';
 
 type SettingsTab = 'profile' | 'users' | 'security' | 'devices';
 
@@ -274,9 +275,19 @@ export default function SettingsPage() {
           {/* TEAM MEMBERS TAB */}
           {tab === 'users' && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-               <div style={{ marginBottom: 32 }}>
-                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: C.text }}>Team Members</h2>
-                <p style={{ margin: '6px 0 0', fontSize: 13, color: C.muted }}>Manage users who have access to this workspace.</p>
+               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: C.text }}>Team Members</h2>
+                  <p style={{ margin: '6px 0 0', fontSize: 13, color: C.muted }}>Manage users who have access to this workspace.</p>
+                </div>
+                <Link href="/panel/settings/invite" style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 8,
+                  backgroundColor: C.primary, color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none',
+                  transition: 'background-color 0.2s', border: 'none', cursor: 'pointer'
+                }}>
+                  <UserPlus style={{ width: 16, height: 16 }} />
+                  Invite Member
+                </Link>
               </div>
 
               <div style={{ backgroundColor: C.card, border: `1px solid ${C.cardBorder}`, borderRadius: 16, overflow: 'hidden' }}>
