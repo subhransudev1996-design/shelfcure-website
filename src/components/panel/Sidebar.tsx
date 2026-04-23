@@ -140,13 +140,6 @@ export function Sidebar() {
                 <Image src="/logo.png" alt="ShelfCure" width={110} height={34}
                   style={{ width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }} priority />
               </div>
-              <p style={{
-                margin: 0, fontSize: 10, fontWeight: 600, color: '#818cf8',
-                lineHeight: 1.2, paddingLeft: 2,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {pharmacyName}
-              </p>
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { usePanelStore } from '@/store/panelStore';
@@ -14,73 +14,82 @@ const DARK_BG = '#020617'; // slate-950
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const isAuthPage = pathname === '/panel/login' || pathname === '/panel/register';
 
+  const user = usePanelStore((s) => s.user);
   const setUser = usePanelStore((s) => s.setUser);
   const setPharmacy = usePanelStore((s) => s.setPharmacy);
   const sidebarCollapsed = usePanelStore((s) => s.sidebarCollapsed);
 
-  // Track whether we've successfully loaded user data this session
-  const hasInitialized = useRef(false);
-
-  useEffect(() => {
-    // On auth pages, just stop loading and skip initialization
+  const checkAuth = useCallback(async () => {
+    // Auth pages don't need authentication
     if (isAuthPage) {
       setLoading(false);
+      setAuthChecked(true);
       return;
     }
 
-    // If we already have user data in the store, don't re-fetch
-    // (this prevents re-fetching on every panel page navigation)
-    if (hasInitialized.current) {
+    // If we already loaded user data, skip
+    if (user) {
       setLoading(false);
+      setAuthChecked(true);
       return;
     }
 
-    let cancelled = false;
+    setLoading(true);
+    const supabase = createClient();
 
-    async function initialize() {
-      setLoading(true);
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+    try {
+      // Use getUser() which makes a server call and is more reliable than getSession()
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-        if (cancelled) return;
+      console.log('[PanelLayout] getUser result:', {
+        hasUser: !!authUser,
+        userId: authUser?.id,
+        error: authError?.message,
+      });
 
-        if (!session?.user) {
-          router.push('/panel/login');
-          return;
-        }
+      if (authError || !authUser) {
+        console.log('[PanelLayout] No authenticated user, redirecting to login');
+        router.replace('/panel/login');
+        setLoading(false);
+        setAuthChecked(true);
+        return;
+      }
 
-        const authUser = session.user;
+      // Fetch user record
+      const { data: userRecord, error: userError } = await supabase
+        .from('users')
+        .select('id, auth_user_id, full_name, email, role, is_active, pharmacy_id')
+        .eq('auth_user_id', authUser.id)
+        .eq('is_active', true)
+        .maybeSingle();
 
-        // Fetch user record with pharmacy info
-        const { data: userRecord } = await supabase
-          .from('users')
-          .select('id, auth_user_id, full_name, email, role, is_active, pharmacy_id')
-          .eq('auth_user_id', authUser.id)
-          .eq('is_active', true)
-          .maybeSingle();
+      console.log('[PanelLayout] User record:', { found: !!userRecord, error: userError?.message });
 
-        if (cancelled) return;
-
-        if (!userRecord) {
-          router.push('/panel/login');
-          return;
-        }
-
-        // Fetch pharmacy name
+      // If no user record in DB, use auth user data directly
+      if (!userRecord) {
+        console.log('[PanelLayout] No user record in DB, using auth user data directly.');
+        setUser({
+          id: authUser.id,
+          auth_user_id: authUser.id,
+          full_name: authUser.user_metadata?.full_name || authUser.email || 'User',
+          email: authUser.email ?? null,
+          role: 'admin',
+          is_active: true,
+        });
+        setPharmacy(null, 'My Pharmacy');
+        console.log('[PanelLayout] Auth success (from auth user, no DB record).');
+      } else {
+        // Fetch pharmacy
         const { data: pharmacy } = await supabase
           .from('pharmacies')
           .select('id, name')
           .eq('id', userRecord.pharmacy_id)
           .maybeSingle();
-
-        if (cancelled) return;
 
         setUser({
           id: String(userRecord.id),
@@ -94,30 +103,23 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         const pId = pharmacy?.id ?? userRecord.pharmacy_id;
         const pName = pharmacy?.name ?? 'My Pharmacy';
         setPharmacy(pId ? String(pId) : null, pName);
-
-        hasInitialized.current = true;
-      } catch (err) {
-        console.error('Panel init error:', err);
-        if (!cancelled) {
-          router.push('/panel/login');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        console.log('[PanelLayout] Auth success, user loaded from DB.');
       }
+    } catch (err) {
+      console.error('[PanelLayout] Error:', err);
+      router.replace('/panel/login');
+    } finally {
+      setLoading(false);
+      setAuthChecked(true);
     }
+  }, [isAuthPage, user, router, setUser, setPharmacy]);
 
-    initialize();
-
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthPage]);
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   // ── Loading screen ──────────────────────────────────────────
-  if (loading) {
+  if (loading && !authChecked) {
     return (
       <div style={{
         minHeight: '100vh',

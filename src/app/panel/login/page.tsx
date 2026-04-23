@@ -42,12 +42,13 @@ export default function PanelLoginPage() {
 
     try {
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-      if (authError) { setError(friendlyError(authError.message)); return; }
-      router.push('/panel');
-      router.refresh();
+      if (authError) { setError(friendlyError(authError.message)); setLoading(false); return; }
+
+      // Use hard navigation to guarantee cookies are sent with the request.
+      // router.push + router.refresh can cause race conditions.
+      window.location.href = '/panel';
     } catch (err: unknown) {
       setError(err instanceof Error ? friendlyError(err.message) : 'An unexpected error occurred');
-    } finally {
       setLoading(false);
     }
   };
