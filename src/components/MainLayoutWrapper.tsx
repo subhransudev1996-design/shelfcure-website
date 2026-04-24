@@ -6,11 +6,8 @@ import { Footer } from "@/components/Footer";
 
 export function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // Don't render marketing header/footer inside the panel dashboard (but keep it on auth pages)
-  const isPanel =
-    pathname?.startsWith("/panel") &&
-    pathname !== "/panel/login" &&
-    pathname !== "/panel/register";
+  // Don't render marketing header/footer inside the panel (including auth pages which have their own layout)
+  const isPanel = pathname?.startsWith("/panel") || pathname?.startsWith("/admin");
 
   if (isPanel) {
     return <>{children}</>;
