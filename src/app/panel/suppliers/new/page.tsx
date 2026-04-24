@@ -33,6 +33,7 @@ interface FormState {
   pincode: string;
   credit_limit: string;
   credit_days: string;
+  opening_balance: string;
 }
 
 /* ─── Reusable Section Card ─── */
@@ -92,7 +93,7 @@ export default function AddSupplierPage() {
   const [form, setForm] = useState<FormState>({
     name: '', contact_person: '', gstin: '', phone: '', email: '',
     address: '', city: '', state: '', pincode: '',
-    credit_limit: '', credit_days: '',
+    credit_limit: '', credit_days: '', opening_balance: '',
   });
 
   const set = (k: keyof FormState, v: string) => setForm(f => ({ ...f, [k]: v }));
