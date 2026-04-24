@@ -94,6 +94,11 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ heroRef, inView }: HeroSectionProps) {
+  /* Hero is always the first section — use isMounted so all animations
+     fire immediately on client hydration, not waiting for IntersectionObserver */
+  const isMounted = useIsMounted();
+  const ready = isMounted; // alias for readability
+
   /* Typewriter */
   const typewriterText = useTypewriter(
     ["Zero Typing Required.", "AI-Powered Billing.", "Instant Inventory Sync.", "Smart Batch Tracking."],
@@ -102,16 +107,16 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
     35
   );
 
-  /* Count-up stats */
-  const countInvoices = useCountUp(47820, 2500, 0, inView);
-  const countAccuracy = useCountUp(982, 2200, 0, inView);
-  const countPharmacies = useCountUp(2500, 2000, 0, inView);
+  /* Count-up stats — trigger on mount, not inView */
+  const countInvoices = useCountUp(47820, 2500, 0, ready);
+  const countAccuracy = useCountUp(982, 2200, 0, ready);
+  const countPharmacies = useCountUp(2500, 2000, 0, ready);
 
   /* Sequential toasts */
   const [activeToast, setActiveToast] = useState(0);
   const [toastVisible, setToastVisible] = useState(true);
   useEffect(() => {
-    if (!inView) return;
+    if (!ready) return;
     const interval = setInterval(() => {
       setToastVisible(false);
       setTimeout(() => {
@@ -120,7 +125,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
       }, 400);
     }, 3200);
     return () => clearInterval(interval);
-  }, [inView]);
+  }, [ready]);
 
   /* Mouse parallax orb */
   const sectionRef = useRef<HTMLElement>(null);
@@ -145,7 +150,6 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
   }, []);
   const resetTilt = useCallback(() => setTilt({ x: 0, y: 0 }), []);
 
-  const isMounted = useIsMounted();
   const currentToast = TOASTS[activeToast];
 
   return (
@@ -261,7 +265,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
         <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
           {/* Glowing AI badge */}
           <div
-            className={inView ? "animate-fade-in-up" : ""}
+            className={ready ? "animate-fade-in-up" : ""}
             style={{
               marginBottom: "1.75rem",
               display: "inline-flex",
@@ -309,7 +313,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
           {/* Main headline */}
           <h1
-            className={inView ? "animate-fade-in-up delay-100" : ""}
+            className={ready ? "animate-fade-in-up delay-100" : ""}
             style={{
               fontSize: "clamp(2.5rem, 4.5vw, 4rem)",
               fontWeight: 800,
@@ -326,7 +330,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
           {/* Typewriter line */}
           <div
-            className={inView ? "animate-fade-in-up delay-200" : ""}
+            className={ready ? "animate-fade-in-up delay-200" : ""}
             style={{
               marginTop: "0.75rem",
               fontSize: "clamp(1.5rem, 3vw, 2.5rem)",
@@ -364,7 +368,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
           {/* Subtext */}
           <p
-            className={inView ? "animate-fade-in-up delay-200" : ""}
+            className={ready ? "animate-fade-in-up delay-200" : ""}
             style={{
               maxWidth: "520px",
               marginTop: "1.5rem",
@@ -379,7 +383,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
           {/* CTA buttons */}
           <div
-            className={`hero-flex-container ${inView ? "animate-fade-in-up delay-300" : ""}`}
+            className={`hero-flex-container ${ready ? "animate-fade-in-up delay-300" : ""}`}
             style={{
               marginTop: "2.25rem",
               display: "flex",
@@ -440,7 +444,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
           {/* Live stats bar */}
           <div
-            className={`hero-flex-container ${inView ? "animate-fade-in-up delay-400" : ""}`}
+            className={`hero-flex-container ${ready ? "animate-fade-in-up delay-400" : ""}`}
             style={{
               marginTop: "2.75rem",
               display: "flex",
@@ -477,7 +481,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
         {/* ── RIGHT COLUMN: Interactive Dashboard Showcase ── */}
         <div
-          className={`hero-right-col ${inView ? "animate-fade-in-up delay-300" : ""}`}
+          className={`hero-right-col ${ready ? "animate-fade-in-up delay-300" : ""}`}
           style={{ position: "relative", perspective: "1200px" }}
         >
           {/* The 3D-tilt dashboard card */}
@@ -550,17 +554,17 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
               {/* Dashboard content area */}
               <div style={{ position: "relative", aspectRatio: "16/9", overflow: "hidden", background: "#000" }}>
-                {isMounted && (
+                {ready && (
                   <iframe
-                    src="https://www.youtube.com/embed/vEWPumKysk8?autoplay=1&loop=1&playlist=vEWPumKysk8&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1"
+                    src="https://www.youtube.com/embed/vEWPumKysk8?autoplay=1&loop=1&playlist=vEWPumKysk8&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0"
                     allow="autoplay; encrypted-media"
-                    allowFullScreen
+                    allowFullScreen={false}
                     style={{
                       position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
+                      top: "-60px",
+                      left: "-2px",
+                      width: "calc(100% + 4px)",
+                      height: "calc(100% + 120px)",
                       border: "none",
                       pointerEvents: "none",
                     }}
