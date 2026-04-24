@@ -76,51 +76,31 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         return;
       }
 
-      // Fetch normal user record
-      const { data: userRecord, error: userError } = await supabase
-        .from('users')
-        .select('id, auth_user_id, full_name, email, role, is_active, pharmacy_id')
-        .eq('auth_user_id', authUser.id)
-        .eq('is_active', true)
-        .maybeSingle();
+      // Use our secure RPC to guarantee atomic creation of pharmacy and user record, bypassing client-side RLS issues.
+      const { data: setupData, error: setupError } = await supabase.rpc('setup_new_user_pharmacy', {
+        p_full_name: authUser.user_metadata?.full_name || authUser.email || 'User',
+        p_email: authUser.email || '',
+        p_pharmacy_name: (authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'My') + "'s Pharmacy"
+      });
 
-      console.log('[PanelLayout] User record:', { found: !!userRecord, error: userError?.message });
-
-      // If no user record in DB, use auth user data directly
-      if (!userRecord) {
-        console.log('[PanelLayout] No user record in DB, using auth user data directly.');
-        setUser({
-          id: authUser.id,
-          auth_user_id: authUser.id,
-          full_name: authUser.user_metadata?.full_name || authUser.email || 'User',
-          email: authUser.email ?? null,
-          role: 'store_admin', // Default to store_admin instead of admin
-          is_active: true,
-        });
-        setPharmacy(null, 'My Pharmacy');
-        console.log('[PanelLayout] Auth success (from auth user, no DB record).');
-      } else {
-        // Fetch pharmacy
-        const { data: pharmacy } = await supabase
-          .from('pharmacies')
-          .select('id, name')
-          .eq('id', userRecord.pharmacy_id)
-          .maybeSingle();
-
-        setUser({
-          id: String(userRecord.id),
-          auth_user_id: String(userRecord.auth_user_id),
-          full_name: userRecord.full_name,
-          email: userRecord.email ?? null,
-          role: userRecord.role as 'store_admin' | 'store_manager' | 'cashier',
-          is_active: userRecord.is_active,
-        });
-
-        const pId = pharmacy?.id ?? userRecord.pharmacy_id;
-        const pName = pharmacy?.name ?? 'My Pharmacy';
-        setPharmacy(pId ? String(pId) : null, pName);
-        console.log('[PanelLayout] Auth success, user loaded from DB.');
+      if (setupError || !setupData) {
+        console.error('[PanelLayout] Failed to setup user/pharmacy via RPC:', setupError);
+        setLoading(false);
+        setAuthChecked(true);
+        return;
       }
+
+      setUser({
+        id: String(setupData.user_id),
+        auth_user_id: authUser.id,
+        full_name: setupData.full_name,
+        email: setupData.email ?? null,
+        role: setupData.role as 'store_admin' | 'store_manager' | 'cashier',
+        is_active: setupData.is_active,
+      });
+
+      setPharmacy(String(setupData.pharmacy_id), setupData.pharmacy_name);
+      console.log('[PanelLayout] Auth success (RPC validated DB records).');
     } catch (err) {
       console.error('[PanelLayout] Error:', err);
       router.replace('/panel/login');

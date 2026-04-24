@@ -10,7 +10,7 @@ import {
   ArrowLeft, Loader2, Package2, AlertTriangle, Clock,
   Layers, IndianRupee, BarChart3, Plus,
   Edit2, RotateCcw, RefreshCw, X, Save, Truck, CheckCircle2,
-  ArrowLeftRight,
+  ArrowLeftRight, Ban, Unlock,
 } from 'lucide-react';
 
 /* ─── Types ─────────────────────────────────────────────────── */
@@ -19,13 +19,14 @@ interface MedicineDetail {
   manufacturer: string | null; dosage_form: string | null;
   pack_size: number; hsn_code: string | null; gst_rate: number;
   min_stock_level: number;
+  sale_unit_mode?: 'pack' | 'both';
+  units_per_pack?: number;
+  pack_unit?: string | null;
 }
 interface Batch {
   id: string; batch_number: string; expiry_date: string;
   stock_quantity: number; purchase_price: number; mrp: number;
-  supplier_id: string | null; created_at: string;
-  // joined
-  supplier_name?: string | null;
+  created_at: string;
 }
 interface Supplier { id: string; name: string; phone: string | null; }
 
@@ -170,6 +171,10 @@ export default function MedicineDetailPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Brand alternatives
+  const [brandAlts, setBrandAlts] = useState<MedicineDetail[]>([]);
+  const [altLoading, setAltLoading] = useState(false);
+
   // Add Batch modal
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({ batch_number: '', expiry_date: nextYear(), quantity: '', purchase_price: '', mrp: '', selling_price: '', gst_percentage: '0', supplier_id: '' });
@@ -203,20 +208,13 @@ export default function MedicineDetailPage() {
       const [medRes, batchRes] = await Promise.all([
         supabase.from('medicines').select('*').eq('id', medicineId).eq('pharmacy_id', pharmacyId).single(),
         supabase.from('batches')
-          .select('id, batch_number, expiry_date, stock_quantity, purchase_price, mrp, supplier_id, created_at')
+          .select('id, batch_number, expiry_date, stock_quantity, purchase_price, mrp, created_at')
           .eq('medicine_id', medicineId).eq('pharmacy_id', pharmacyId)
           .order('expiry_date'),
       ]);
       if (medRes.data) setMedicine(medRes.data);
 
-      // enrich batches with supplier names
       const batchData: Batch[] = batchRes.data || [];
-      const supplierIds = [...new Set(batchData.map(b => b.supplier_id).filter(Boolean))] as string[];
-      if (supplierIds.length > 0) {
-        const { data: sups } = await supabase.from('suppliers').select('id, name').in('id', supplierIds);
-        const supMap = Object.fromEntries((sups || []).map(s => [s.id, s.name]));
-        batchData.forEach(b => { b.supplier_name = b.supplier_id ? supMap[b.supplier_id] ?? null : null; });
-      }
       setBatches(batchData);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -256,15 +254,15 @@ export default function MedicineDetailPage() {
     }
     setAddSaving(true);
     try {
+      const storeQty = (medicine?.sale_unit_mode === 'both' && (medicine.units_per_pack || 1) > 1) ? qty * (medicine.units_per_pack || 1) : qty;
       const { error } = await supabase.from('batches').insert({
         pharmacy_id: pharmacyId,
         medicine_id: medicineId,
         batch_number: addForm.batch_number.trim(),
         expiry_date: addForm.expiry_date,
-        stock_quantity: qty,
+        stock_quantity: storeQty,
         purchase_price: rate,
         mrp,
-        supplier_id: selectedSupplier?.id ?? null,
       });
       if (error) throw error;
       toast.success('Batch added!');
@@ -322,7 +320,9 @@ export default function MedicineDetailPage() {
     if (!adjustBatch) return;
     const delta = Number(adjustDelta);
     if (isNaN(delta) || delta === 0) return;
-    const newQty = Math.max(0, adjustBatch.stock_quantity + delta);
+    
+    const storeDelta = (medicine?.sale_unit_mode === 'both' && (medicine.units_per_pack || 1) > 1) ? delta * (medicine.units_per_pack || 1) : delta;
+    const newQty = Math.max(0, adjustBatch.stock_quantity + storeDelta);
     setAdjustSaving(true);
     try {
       const { error } = await supabase.from('batches').update({ stock_quantity: newQty }).eq('id', adjustBatch.id);
@@ -342,9 +342,14 @@ export default function MedicineDetailPage() {
   const activeBatches = batches.filter(b => b.stock_quantity > 0);
   const nearExpiry = batches.filter(b => { const d = daysToExpiry(b.expiry_date); return d >= 0 && d <= 90; });
   const expiredCount = batches.filter(b => b.expiry_date < today).length;
-  const totalStock = batches.reduce((s, b) => s + b.stock_quantity, 0);
-  const totalValue = batches.reduce((s, b) => s + b.stock_quantity * b.mrp, 0);
+  const totalStock = activeBatches.reduce((s, b) => s + b.stock_quantity, 0);
+  const totalValue = activeBatches.reduce((s, b) => s + b.stock_quantity * b.mrp, 0);
   const isLow = medicine && totalStock < (medicine.min_stock_level || 10);
+
+  const isFlexible = medicine?.sale_unit_mode === 'both' && (medicine.units_per_pack || 1) > 1;
+  const upp = medicine?.units_per_pack || 1;
+  const totalStrips = isFlexible ? Math.floor(totalStock / upp) : totalStock;
+  const totalRemainder = isFlexible ? totalStock % upp : 0;
 
   /* ─ Filtered suppliers ─ */
   const filteredSuppliers = suppliers.filter(s => s.name.toLowerCase().includes(supplierSearch.toLowerCase()));
@@ -424,7 +429,7 @@ export default function MedicineDetailPage() {
 
       {/* ── Stat cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-        <StatCard label="Total Stock" value={totalStock} sub={`Min alert: ${medicine.min_stock_level || 10}`} icon={BarChart3} color={totalStock < (medicine.min_stock_level || 10) ? C.amber : C.emerald} />
+        <StatCard label="Total Stock" value={isFlexible ? `${totalStrips} Strips` + (totalRemainder > 0 ? ` + ${totalRemainder} units` : '') : `${totalStock} ${medicine.pack_unit || 'Units'}`} sub={`Min alert: ${medicine.min_stock_level || 10}`} icon={BarChart3} color={totalStock < (medicine.min_stock_level || 10) ? C.amber : C.emerald} />
         <StatCard label="Active Batches" value={activeBatches.length} sub={`${expiredCount} expired`} icon={Layers} color={C.indigoLight} />
         <StatCard label="Near Expiry" value={nearExpiry.length} sub="Within 90 days" icon={Clock} color={nearExpiry.length > 0 ? C.amber : C.emerald} />
         <StatCard label="Stock Value (MRP)" value={formatCurrency(totalValue)} sub="At maximum retail price" icon={IndianRupee} color={C.emerald} />
@@ -437,10 +442,11 @@ export default function MedicineDetailPage() {
         <div style={{ backgroundColor: C.card, border: `1px solid ${C.cardBorder}`, borderRadius: 16, padding: 18 }}>
           <p style={{ margin: '0 0 12px', fontSize: 10, fontWeight: 800, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Medicine Info</p>
           <InfoRow label="Dosage Form" value={medicine.dosage_form} />
-          <InfoRow label="Pack Size" value={`${medicine.pack_size} units`} />
+          <InfoRow label="Pack Size" value={medicine.pack_unit ? `${medicine.pack_unit} (${medicine.pack_size} per pack)` : `${medicine.pack_size} units`} />
+          <InfoRow label="Sale Mode" value={medicine.sale_unit_mode === 'both' ? `Pack + Units (${medicine.units_per_pack}/pack)` : 'Pack Only'} />
           <InfoRow label="GST Rate" value={`${medicine.gst_rate}%`} />
           <InfoRow label="HSN Code" value={medicine.hsn_code} />
-          <InfoRow label="Min Stock Alert" value={`${medicine.min_stock_level || 10} units`} />
+          <InfoRow label="Min Stock Alert" value={isFlexible ? `${medicine.min_stock_level} Strips` : `${medicine.min_stock_level} ${medicine.pack_unit || 'units'}`} />
           {medicine.generic_name && <InfoRow label="Generic Name" value={medicine.generic_name} />}
           {medicine.manufacturer && <InfoRow label="Manufacturer" value={medicine.manufacturer} />}
         </div>
@@ -478,6 +484,7 @@ export default function MedicineDetailPage() {
                       display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px',
                       borderBottom: i < batches.length - 1 ? `1px solid rgba(255,255,255,0.03)` : 'none',
                       transition: 'background 0.12s ease',
+                      opacity: 1,
                     }}
                     onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(99,102,241,0.03)'; }}
                     onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -489,11 +496,6 @@ export default function MedicineDetailPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', marginBottom: 4 }}>
                         <span style={{ fontSize: 13, fontWeight: 800, color: C.text }}>Batch: {b.batch_number}</span>
-                        {b.supplier_name && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 7px', borderRadius: 6, backgroundColor: 'rgba(96,165,250,0.1)', color: '#60a5fa', fontSize: 10, fontWeight: 700, border: '1px solid rgba(96,165,250,0.15)' }}>
-                            <Truck style={{ width: 9, height: 9 }} /> {b.supplier_name}
-                          </span>
-                        )}
                         {b.stock_quantity === 0 && (
                           <span style={{ padding: '2px 6px', borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.04)', color: C.muted, fontSize: 9, fontWeight: 800 }}>OUT OF STOCK</span>
                         )}
@@ -515,11 +517,25 @@ export default function MedicineDetailPage() {
 
                     {/* Stock qty + actions */}
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: b.stock_quantity === 0 ? '#334155' : b.stock_quantity < 10 ? C.rose : C.text, lineHeight: 1 }}>
-                        {b.stock_quantity}
-                      </p>
-                      <p style={{ margin: '2px 0 4px', fontSize: 9, color: C.muted, fontWeight: 700 }}>units</p>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
+                      {isFlexible ? (
+                        <>
+                          <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: b.stock_quantity === 0 ? '#334155' : Math.floor(b.stock_quantity / upp) < 2 ? C.rose : C.text, lineHeight: 1 }}>
+                            {Math.floor(b.stock_quantity / upp)}
+                          </p>
+                          <p style={{ margin: '2px 0 2px', fontSize: 9, color: C.muted, fontWeight: 700 }}>Strips</p>
+                          {b.stock_quantity % upp > 0 && (
+                            <p style={{ margin: 0, fontSize: 9, color: C.indigoLight, fontWeight: 700 }}>+ {b.stock_quantity % upp} units</p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: b.stock_quantity === 0 ? '#334155' : b.stock_quantity < 10 ? C.rose : C.text, lineHeight: 1 }}>
+                            {b.stock_quantity}
+                          </p>
+                          <p style={{ margin: '2px 0 4px', fontSize: 9, color: C.muted, fontWeight: 700 }}>{medicine.pack_unit || 'units'}</p>
+                        </>
+                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, marginTop: isFlexible ? 4 : 0 }}>
                         <button onClick={() => openEdit(b)} style={{ fontSize: 10, color: C.muted, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                           onMouseEnter={e => { e.currentTarget.style.color = C.text; }}
                           onMouseLeave={e => { e.currentTarget.style.color = C.muted; }}>
@@ -540,7 +556,7 @@ export default function MedicineDetailPage() {
               <div style={{ padding: '10px 20px', borderTop: `1px solid ${C.cardBorder}`, backgroundColor: 'rgba(255,255,255,0.01)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <p style={{ margin: 0, fontSize: 11, color: '#334155', fontWeight: 500 }}>
                   Avg. margin: {totalValue > 0
-                    ? `${Math.round(((totalValue - batches.reduce((s, b) => s + b.stock_quantity * b.purchase_price, 0)) / totalValue) * 100)}%`
+                    ? `${Math.round(((totalValue - activeBatches.reduce((s, b) => s + b.stock_quantity * b.purchase_price, 0)) / totalValue) * 100)}%`
                     : '—'}
                 </p>
                 <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: C.text }}>Total: {formatCurrency(totalValue)}</p>
@@ -550,18 +566,61 @@ export default function MedicineDetailPage() {
         </div>
       </div>
 
-      {/* ─────── Brand Alternatives placeholder ─────── */}
+      {/* ─────── Brand Alternatives ─────── */}
       {medicine.generic_name && (
         <div style={{ backgroundColor: C.card, border: `1px solid ${C.cardBorder}`, borderRadius: 16, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 20px', borderBottom: `1px solid ${C.cardBorder}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <ArrowLeftRight style={{ width: 14, height: 14, color: C.indigo }} />
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: C.text }}>Brand Alternatives</p>
-            <span style={{ padding: '2px 8px', borderRadius: 20, backgroundColor: 'rgba(99,102,241,0.1)', color: C.indigoLight, fontSize: 10, fontWeight: 700 }}>{medicine.generic_name}</span>
+          <div style={{ padding: '14px 20px', borderBottom: `1px solid ${C.cardBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <ArrowLeftRight style={{ width: 14, height: 14, color: C.indigo }} />
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: C.text }}>Brand Alternatives</p>
+              <span style={{ padding: '2px 8px', borderRadius: 20, backgroundColor: 'rgba(99,102,241,0.1)', color: C.indigoLight, fontSize: 10, fontWeight: 700 }}>{medicine.generic_name}</span>
+            </div>
+            <button
+              onClick={async () => {
+                setAltLoading(true);
+                try {
+                  const { data } = await supabase.from('medicines')
+                    .select('*')
+                    .eq('pharmacy_id', pharmacyId)
+                    .ilike('generic_name', medicine.generic_name!)
+                    .neq('id', medicine.id)
+                    .limit(10);
+                  if (data) setBrandAlts(data);
+                } finally { setAltLoading(false); }
+              }}
+              style={{ color: C.indigo, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+            >
+              {brandAlts.length > 0 ? "Refresh" : "Load Alternatives"}
+            </button>
           </div>
-          <div style={{ padding: '24px 0', textAlign: 'center' }}>
-            <ArrowLeftRight style={{ width: 24, height: 24, color: '#1e293b', margin: '0 auto' }} />
-            <p style={{ margin: '8px 0 0', fontSize: 12, color: C.muted }}>Medicines with the same generic composition will appear here.</p>
-          </div>
+          {altLoading ? (
+            <div style={{ padding: '24px 0', textAlign: 'center' }}>
+              <Loader2 style={{ width: 24, height: 24, color: C.indigo, animation: 'spin 1s linear infinite', margin: '0 auto' }} />
+            </div>
+          ) : brandAlts.length > 0 ? (
+            <div>
+              {brandAlts.map((alt) => (
+                <div key={alt.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 20px', borderBottom: `1px solid rgba(255,255,255,0.03)`, cursor: 'pointer', transition: 'background 0.12s ease' }}
+                  onClick={() => router.push(`/panel/inventory/${alt.id}`)}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(99,102,241,0.03)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <div style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Package2 style={{ width: 14, height: 14, color: C.indigoLight }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{alt.name}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 11, color: C.muted }}>{alt.manufacturer} · {alt.dosage_form}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ padding: '24px 0', textAlign: 'center' }}>
+              <ArrowLeftRight style={{ width: 24, height: 24, color: '#1e293b', margin: '0 auto' }} />
+              <p style={{ margin: '8px 0 0', fontSize: 12, color: C.muted }}>Medicines with the same generic composition will appear here.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -596,7 +655,7 @@ export default function MedicineDetailPage() {
               <MInput label="Expiry Date" value={addForm.expiry_date} onChange={v => setAddForm(f => ({ ...f, expiry_date: v }))} type="date" required />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <MInput label="Quantity (units)" value={addForm.quantity} onChange={v => setAddForm(f => ({ ...f, quantity: v }))} type="number" min={1} placeholder="0" required />
+              <MInput label={isFlexible ? "Quantity (Strips)" : `Quantity (${medicine.pack_unit || 'units'})`} value={addForm.quantity} onChange={v => setAddForm(f => ({ ...f, quantity: v }))} type="number" min={1} placeholder="0" required />
               <MSelect label="GST %" value={addForm.gst_percentage} onChange={v => setAddForm(f => ({ ...f, gst_percentage: v }))}>
                 {[0, 5, 12, 18, 28].map(r => <option key={r} value={r}>{r}%</option>)}
               </MSelect>
@@ -737,13 +796,13 @@ export default function MedicineDetailPage() {
           </div>
           <form onSubmit={handleAdjust} style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             <MInput
-              label="Quantity Change (use − for removal)"
+              label={isFlexible ? "Quantity Change (Strips, use − for removal)" : "Quantity Change (units, use − for removal)"}
               value={adjustDelta}
               onChange={setAdjustDelta}
               type="number"
               placeholder="e.g. +10 or -5"
               hint={adjustDelta && !isNaN(Number(adjustDelta))
-                ? `New quantity: ${Math.max(0, adjustBatch.stock_quantity + Number(adjustDelta))}`
+                ? `New quantity: ${Math.max(0, adjustBatch.stock_quantity + ((isFlexible ? Number(adjustDelta) * upp : Number(adjustDelta))))}`
                 : undefined}
             />
             <MInput label="Reason" value={adjustReason} onChange={setAdjustReason} placeholder="Reason for adjustment" />

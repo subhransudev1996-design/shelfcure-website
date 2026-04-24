@@ -52,9 +52,6 @@ export const usePanelStore = create<PanelState>()(
     }),
     {
       name: 'shelfcure-panel',
-      partialize: (state) => ({
-        sidebarCollapsed: state.sidebarCollapsed,
-      }),
     }
   )
 );

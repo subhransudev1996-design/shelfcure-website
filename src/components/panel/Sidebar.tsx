@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Package, ShoppingCart, Receipt,
   RotateCcw, Truck, Users, Building2, Wallet,
-  BarChart3, FileText, Settings, Pill,
+  BarChart3, FileText, Settings,
   Tag, Bell, LifeBuoy, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 
@@ -123,24 +123,12 @@ export function Sidebar() {
           justifyContent: collapsed ? 'center' : 'flex-start',
         }}>
           {collapsed ? (
-            <div style={{
-              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-              background: 'linear-gradient(135deg, #6366f1, #7c3aed)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 20px rgba(99,102,241,0.4)',
-            }}>
-              <Pill style={{ width: 17, height: 17, color: '#fff' }} />
-            </div>
+            <Image src="/Icon.png" alt="ShelfCure" width={36} height={36}
+              style={{ width: 36, height: 36, objectFit: 'contain', display: 'block' }} priority />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
-              <div style={{
-                background: 'rgba(255,255,255,0.95)', borderRadius: 8,
-                padding: '4px 10px', display: 'inline-flex', alignItems: 'center',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
-              }}>
-                <Image src="/logo.png" alt="ShelfCure" width={110} height={34}
-                  style={{ width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }} priority />
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+              <Image src="/logo.png" alt="ShelfCure" width={110} height={34}
+                style={{ width: 'auto', height: 'auto', objectFit: 'contain', display: 'block', filter: 'brightness(0) invert(1)' }} priority />
             </div>
           )}
         </div>
@@ -152,7 +140,13 @@ export function Sidebar() {
           scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.05) transparent',
         }}>
           {navSections.map((section, si) => {
-            const filteredItems = section.items.filter(item => !item.roles || (user?.role && item.roles.includes(user.role)));
+            const filteredItems = section.items.filter(item => {
+              if (!item.roles) return true;
+              if (!user?.role) return false;
+              // Handle legacy roles that might not be migrated yet
+              const normalizedRole = ['owner', 'admin'].includes(user.role) ? 'store_admin' : user.role;
+              return item.roles.includes(normalizedRole);
+            });
             if (filteredItems.length === 0) return null;
 
             return (

@@ -102,7 +102,7 @@ export default function ChallanDetailPage() {
       
       const { data: batches, error: batchErr } = await supabase
         .from('batches')
-        .select('id, medicine_id, batch_number, current_quantity')
+        .select('id, medicine_id, batch_number, stock_quantity')
         .eq('pharmacy_id', pharmacyId)
         .eq('challan_id', challanId);
         
@@ -110,7 +110,7 @@ export default function ChallanDetailPage() {
       
       const enrichedItems = (itm || []).map(i => {
         const batch = (batches || []).find(b => b.medicine_id === i.medicine_id && b.batch_number === i.batch_number);
-        const current_stock = batch?.current_quantity || 0;
+        const current_stock = batch?.stock_quantity || 0;
         const batch_id = batch?.id || 0;
         const sale_unit_mode = i.medicines?.sale_unit_mode || 'pack';
         const units_per_pack = i.medicines?.units_per_pack || 1;
@@ -218,8 +218,7 @@ export default function ChallanDetailPage() {
           await supabase
             .from('batches')
             .update({
-              current_quantity: newCurrentStock,
-              updated_at: new Date().toISOString(),
+              stock_quantity: newCurrentStock,
             })
             .eq('id', item.batch_id);
 
@@ -292,8 +291,7 @@ export default function ChallanDetailPage() {
           await supabase
             .from('batches')
             .update({
-              current_quantity: newCurrentStock,
-              updated_at: new Date().toISOString(),
+              stock_quantity: newCurrentStock,
             })
             .eq('id', item.batch_id);
 

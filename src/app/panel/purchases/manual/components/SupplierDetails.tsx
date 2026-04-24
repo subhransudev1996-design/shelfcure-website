@@ -93,9 +93,25 @@ export function SupplierDetails({
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: `1px solid ${supplier ? C.primary : C.cardBorder}`, backgroundColor: C.inputBg, color: C.text, fontSize: 13, outline: 'none', transition: 'all 0.2s' }} 
             />
             
-            {showDrop && suppliers.length > 0 && !supplier && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, backgroundColor: '#0f172a', border: `1px solid ${C.cardBorder}`, borderRadius: 12, overflow: 'hidden', zIndex: 50, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}>
-                {suppliers.map(s => (
+            {showDrop && !supplier && (() => {
+              const q = supplierQuery.toLowerCase().trim();
+              const filtered = q
+                ? suppliers.filter(s =>
+                    s.name.toLowerCase().includes(q) ||
+                    (s.phone || '').includes(q) ||
+                    (s.gstin || '').toLowerCase().includes(q)
+                  )
+                : suppliers;
+              if (filtered.length === 0) return (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, backgroundColor: '#0f172a', border: `1px solid ${C.cardBorder}`, borderRadius: 12, overflow: 'hidden', zIndex: 50, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}>
+                  <div style={{ padding: '16px', textAlign: 'center', color: C.muted, fontSize: 12 }}>
+                    {suppliers.length === 0 ? 'No suppliers in database. Add one first.' : `No match for "${supplierQuery}"`}
+                  </div>
+                </div>
+              );
+              return (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, backgroundColor: '#0f172a', border: `1px solid ${C.cardBorder}`, borderRadius: 12, overflow: 'hidden', zIndex: 50, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)', maxHeight: 240, overflowY: 'auto' }}>
+                {filtered.map(s => (
                   <div 
                     key={s.id} 
                     onClick={() => {
@@ -108,10 +124,12 @@ export function SupplierDetails({
                     onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
                     <div style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>{s.name}</div>
+                    {s.gstin && <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>GST: {s.gstin}</div>}
                   </div>
                 ))}
               </div>
-            )}
+              );
+            })()}
          </div>
 
          {supplier && (

@@ -56,7 +56,7 @@ export default function NewPurchaseReturnPage() {
       const enriched: any[] = [];
       for (const pi of (pItems || [])) {
         const { data: med } = await supabase.from('medicines').select('name, sale_unit_mode, pack_size').eq('id', pi.medicine_id).maybeSingle();
-        const { data: batch } = await supabase.from('batches').select('id, current_quantity, received_quantity').eq('pharmacy_id', pharmacyId).eq('medicine_id', pi.medicine_id).eq('batch_number', pi.batch_number || '').maybeSingle();
+        const { data: batch } = await supabase.from('batches').select('id, stock_quantity').eq('pharmacy_id', pharmacyId).eq('medicine_id', pi.medicine_id).eq('batch_number', pi.batch_number || '').maybeSingle();
         
         // Check already returned qty for this purchase item
         const { data: retItems } = await supabase.from('purchase_return_items').select('quantity').eq('purchase_item_id', pi.id);
@@ -68,7 +68,7 @@ export default function NewPurchaseReturnPage() {
           sale_unit_mode: med?.sale_unit_mode || 'pack_only',
           units_per_pack: med?.pack_size || 1,
           batch_id: batch?.id || null,
-          batch_current_quantity: batch?.current_quantity || 0,
+          batch_stock_quantity: batch?.stock_quantity || 0,
           returned_quantity: alreadyReturned,
         });
       }
@@ -89,7 +89,7 @@ export default function NewPurchaseReturnPage() {
   function getMaxReturnable(item: any) {
     const upp = getUpp(item);
     const notYetReturned = getTotalReceived(item) - Math.floor((item.returned_quantity || 0) / upp);
-    const currentInStock = Math.floor((item.batch_current_quantity || 0) / upp);
+    const currentInStock = Math.floor((item.batch_stock_quantity || 0) / upp);
     return Math.max(0, Math.min(notYetReturned, currentInStock));
   }
   function adjustQty(item: any, delta: number) {
@@ -147,8 +147,8 @@ export default function NewPurchaseReturnPage() {
         });
 
         if (item.batch_id) {
-          const newQty = Math.max(0, (item.batch_current_quantity || 0) - rawQty);
-          await supabase.from('batches').update({ current_quantity: newQty }).eq('id', item.batch_id);
+          const newQty = Math.max(0, (item.batch_stock_quantity || 0) - rawQty);
+          await supabase.from('batches').update({ stock_quantity: newQty }).eq('id', item.batch_id);
           await supabase.from('inventory_transactions').insert({
             pharmacy_id: pharmacyId, batch_id: item.batch_id, medicine_id: item.medicine_id,
             transaction_type: 'adjustment', reference_type: 'purchase_return',
@@ -275,7 +275,7 @@ export default function NewPurchaseReturnPage() {
                             {(item.returned_quantity || 0) > 0 && <span style={{ color: C.orange, marginLeft: 6 }}>({Math.floor(item.returned_quantity / upp)} returned)</span>}
                           </p>
                           <p style={{ margin: '3px 0 0', fontSize: 10, color: C.muted }}>
-                            <span style={{ color: C.indigo, fontWeight: 700 }}>In Stock: {Math.floor((item.batch_current_quantity || 0) / upp)}</span>
+                            <span style={{ color: C.indigo, fontWeight: 700 }}>In Stock: {Math.floor((item.batch_stock_quantity || 0) / upp)}</span>
                             {' · '}<span>Max: {maxR}</span>
                           </p>
                         </div>

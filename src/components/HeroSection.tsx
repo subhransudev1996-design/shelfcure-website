@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Icons } from "@/components/Icons";
 
@@ -138,22 +137,6 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
     setTilt({ x, y });
   }, []);
   const resetTilt = useCallback(() => setTilt({ x: 0, y: 0 }), []);
-
-  /* Scanning beam Y position */
-  const [scanY, setScanY] = useState(0);
-  useEffect(() => {
-    if (!inView) return;
-    let frame: number;
-    let start: number | null = null;
-    function animate(ts: number) {
-      if (!start) start = ts;
-      const elapsed = (ts - start) % 4000;
-      setScanY((elapsed / 4000) * 100);
-      frame = requestAnimationFrame(animate);
-    }
-    frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
-  }, [inView]);
 
   const currentToast = TOASTS[activeToast];
 
@@ -558,14 +541,20 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
               </div>
 
               {/* Dashboard content area */}
-              <div style={{ position: "relative", aspectRatio: "16/10", overflow: "hidden", background: "#0f0f23" }}>
-                <Image
-                  src="/dashboard-preview.png"
-                  alt="ShelfCure Dashboard"
-                  fill
-                  priority
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  style={{ objectFit: "cover" }}
+              <div style={{ position: "relative", aspectRatio: "16/9", overflow: "hidden", background: "#000" }}>
+                <iframe
+                  src="https://www.youtube.com/embed/vEWPumKysk8?autoplay=1&loop=1&playlist=vEWPumKysk8&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1"
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    border: "none",
+                    pointerEvents: "none",
+                  }}
                 />
 
                 {/* Gradient overlay */}
@@ -573,25 +562,9 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
                   style={{
                     position: "absolute",
                     inset: 0,
-                    background: "linear-gradient(180deg, rgba(15,15,35,0.2) 0%, rgba(15,15,35,0.1) 50%, rgba(15,15,35,0.5) 100%)",
+                    background: "linear-gradient(180deg, rgba(15,15,35,0.1) 0%, transparent 40%, rgba(15,15,35,0.4) 100%)",
                     pointerEvents: "none",
                     zIndex: 2,
-                  }}
-                />
-
-                {/* ── SCANNING BEAM ── */}
-                <div
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    right: 0,
-                    top: `${scanY}%`,
-                    height: "2px",
-                    background: "linear-gradient(90deg, transparent 0%, #818cf8 20%, #a5b4fc 50%, #818cf8 80%, transparent 100%)",
-                    boxShadow: "0 0 20px rgba(129,140,248,0.5), 0 0 60px rgba(129,140,248,0.2)",
-                    zIndex: 3,
-                    pointerEvents: "none",
-                    transition: "top 0.05s linear",
                   }}
                 />
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Upload, Save, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -9,6 +9,7 @@ import { PurchaseGrid } from './components/PurchaseGrid';
 import { PurchaseTotals } from './components/PurchaseTotals';
 import { PurchaseLineItem, Supplier, isInterState } from './components/types';
 import { usePanelStore } from '@/store/panelStore';
+import { createClient } from '@/lib/supabase/client';
 
 const C = {
   bg: '#020617',          
@@ -38,23 +39,15 @@ const newEmptyLine = (): PurchaseLineItem => ({
   original_barcode: ''
 });
 
-const mockPharmacyProfile = {
-  id: 'pharmacy-123',
-  name: 'My Pharmacy',
-  state: 'Maharashtra',
-  gstin: '27AAAAA1234A1Z5'
-};
-
 export default function ManualPurchaseEntry() {
   const router = useRouter();
+  const supabase = createClient();
+  const pharmacyId = usePanelStore((s) => s.pharmacyId);
   
   const [supplierQuery, setSupplierQuery] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   
-  const [suppliers, setSuppliers] = useState<Supplier[]>([
-    { id: '1', name: 'MedPlus Distributors', phone: '9876543210', gstin: '27ABCD1234E1Z5', state: 'Maharashtra', city: 'Mumbai', address: '123 Main St' },
-    { id: '2', name: 'Delhi Pharma Hub', phone: '8765432109', gstin: '07XYZ9876H1Z2', state: 'Delhi', city: 'New Delhi', address: '45 Pharma Ave' }
-  ]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   
   const [billNumber, setBillNumber] = useState('');
   const [billDate, setBillDate] = useState(new Date().toISOString().split('T')[0]);
@@ -67,11 +60,45 @@ export default function ManualPurchaseEntry() {
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [forceOverride, setForceOverride] = useState(false);
 
+  /* ─── Fetch suppliers from DB ─── */
+  const loadSuppliers = useCallback(async () => {
+    if (!pharmacyId) return;
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('id, name, phone, gstin, address')
+      .eq('pharmacy_id', pharmacyId)
+      .order('name')
+      .limit(500);
+    if (!error && data) {
+      setSuppliers(data.map(s => ({
+        id: s.id,
+        name: s.name,
+        phone: s.phone,
+        gstin: s.gstin,
+        address: s.address,
+        city: null,
+        state: null,
+      })));
+    }
+  }, [pharmacyId, supabase]);
+
+  useEffect(() => {
+    loadSuppliers();
+  }, [loadSuppliers]);
+
+  /* ─── Derive pharmacy profile from store ─── */
+  const pharmacyProfile = {
+    id: pharmacyId || '',
+    name: usePanelStore.getState().pharmacyName || 'My Pharmacy',
+    state: null as string | null,
+    gstin: null as string | null,
+  };
+
   const interState = isInterState(
     selectedSupplier?.state,
-    mockPharmacyProfile?.state,
+    pharmacyProfile?.state,
     selectedSupplier?.gstin,
-    mockPharmacyProfile?.gstin
+    pharmacyProfile?.gstin
   );
 
   const handleAddLine = (item: PurchaseLineItem) => {

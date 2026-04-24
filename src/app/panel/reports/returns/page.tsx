@@ -95,7 +95,7 @@ export default function SalesReturnsPage() {
         .from('sale_returns')
         .select(`
           id, return_number, return_date, total_amount, refund_method,
-          sales!inner(bill_number, customers(name)),
+          sales(bill_number, customer_id, customers(name)),
           sale_return_items(id)
         `)
         .eq('pharmacy_id', pid)
@@ -112,11 +112,11 @@ export default function SalesReturnsPage() {
         customer_name: r.sales?.customers?.name ?? null,
         bill_number: r.sales?.bill_number ?? null,
         items_count: Array.isArray(r.sale_return_items) ? r.sale_return_items.length : 0,
-        total_amount: r.total_amount,
+        total_amount: r.total_amount ?? 0,
         refund_method: r.refund_method,
       })));
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('Sale returns load error:', err?.message || err?.details || err?.hint || err);
     } finally {
       setLoading(false);
     }

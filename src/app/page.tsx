@@ -897,18 +897,44 @@ export default function Home() {
                   background: "linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 100%)",
                   pointerEvents: "none",
                 }} />
-                {/* AI Brain / Neural network swirl icon */}
-                <svg className="ai-hub-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" style={{ position: "relative", zIndex: 2, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.15))" }}>
-                  {/* Neural swirl paths — inspired by AI brain knot */}
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
-                  <path d="M15.5 6.5C14 5 10 5 8.5 6.5S6 10.5 8 12c2 1.5 1 3.5 0 5s3 2 4.5.5S15 14 13 12.5s-1-3 0-4.5S17 8 15.5 6.5z" stroke="white" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity="0.95"/>
-                  <path d="M8.5 17.5C10 19 14 19 15.5 17.5S18 13.5 16 12c-2-1.5-1-3.5 0-5s-3-2-4.5-.5S9 10 11 11.5s1 3 0 4.5S7 16 8.5 17.5z" stroke="white" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity="0.95"/>
-                  {/* Center dot cluster */}
-                  <circle cx="12" cy="12" r="1.5" fill="white" opacity="0.9"/>
-                  <circle cx="10" cy="10.5" r="0.7" fill="white" opacity="0.5"/>
-                  <circle cx="14" cy="13.5" r="0.7" fill="white" opacity="0.5"/>
-                  <circle cx="13.5" cy="10" r="0.5" fill="white" opacity="0.4"/>
-                  <circle cx="10.5" cy="14" r="0.5" fill="white" opacity="0.4"/>
+                {/* AI Bill Scanner icon */}
+                <svg width="58" height="58" viewBox="0 0 48 48" fill="none" style={{ position: "relative", zIndex: 2, filter: "drop-shadow(0 0 10px rgba(255,255,255,0.45))" }}>
+                  <defs>
+                    <linearGradient id="scanBeamGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%"   stopColor="white" stopOpacity="0"/>
+                      <stop offset="20%"  stopColor="white" stopOpacity="1"/>
+                      <stop offset="80%"  stopColor="white" stopOpacity="1"/>
+                      <stop offset="100%" stopColor="white" stopOpacity="0"/>
+                    </linearGradient>
+                  </defs>
+
+                  {/* Receipt / bill document */}
+                  <path d="M10 3 L34 3 L42 11 L42 45 L10 45 Z"
+                    stroke="white" strokeWidth="2" strokeLinejoin="round"
+                    fill="rgba(255,255,255,0.07)"/>
+                  {/* Folded corner */}
+                  <path d="M34 3 L34 11 L42 11"
+                    stroke="white" strokeWidth="1.5" strokeLinejoin="round"
+                    fill="none" strokeOpacity="0.6"/>
+
+                  {/* Bill line items (text rows) */}
+                  <line x1="15" y1="19" x2="37" y2="19" stroke="white" strokeWidth="1.4" strokeOpacity="0.28" strokeLinecap="round"/>
+                  <line x1="15" y1="25" x2="37" y2="25" stroke="white" strokeWidth="1.4" strokeOpacity="0.28" strokeLinecap="round"/>
+                  <line x1="15" y1="31" x2="29" y2="31" stroke="white" strokeWidth="1.4" strokeOpacity="0.28" strokeLinecap="round"/>
+                  <line x1="15" y1="37" x2="32" y2="37" stroke="white" strokeWidth="1.4" strokeOpacity="0.28" strokeLinecap="round"/>
+
+                  {/* Animated scan beam */}
+                  <rect className="ai-scan-beam" x="6" y="21" width="36" height="3"
+                    fill="url(#scanBeamGrad)" rx="1.5"/>
+                  {/* Beam glow halo */}
+                  <rect className="ai-scan-beam" x="6" y="20" width="36" height="5"
+                    fill="url(#scanBeamGrad)" rx="2.5" opacity="0.25"/>
+
+                  {/* AI indicator dot — rides the right edge of the beam */}
+                  <circle className="ai-scan-dot" cx="44" cy="22.5" r="3.5" fill="white" fillOpacity="0.95"/>
+                  {/* Sparkle cross on the dot */}
+                  <line className="ai-scan-dot" x1="44" y1="19.5" x2="44" y2="25.5" stroke="rgba(99,102,241,0.9)" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line className="ai-scan-dot" x1="41"  y1="22.5" x2="47"  y2="22.5" stroke="rgba(99,102,241,0.9)" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
               </div>
             </div>
@@ -962,12 +988,18 @@ export default function Home() {
                     inset 0 8px 20px rgba(165,180,252,0.4);
                 }
               }
-              .ai-hub-icon {
-                animation: ai-icon-spin 30s linear infinite;
+              .ai-scan-beam {
+                transform-box: fill-box;
+                animation: ai-scan-sweep 2.2s ease-in-out infinite;
               }
-              @keyframes ai-icon-spin {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
+              .ai-scan-dot {
+                transform-box: fill-box;
+                animation: ai-scan-sweep 2.2s ease-in-out infinite;
+              }
+              @keyframes ai-scan-sweep {
+                0%   { transform: translateY(-7px); }
+                50%  { transform: translateY(14px); }
+                100% { transform: translateY(-7px); }
               }
             `}</style>
 
@@ -1361,12 +1393,35 @@ export default function Home() {
                 overflow: "hidden",
               }}>
                 <div style={{ position: "absolute", top: "4px", left: "18%", right: "18%", height: "38%", borderRadius: "50%", background: "linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />
-                <svg className="ai-center-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" style={{ position: "relative", zIndex: 2, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.15))" }}>
-                  <path d="M15.5 6.5C14 5 10 5 8.5 6.5S6 10.5 8 12c2 1.5 1 3.5 0 5s3 2 4.5.5S15 14 13 12.5s-1-3 0-4.5S17 8 15.5 6.5z" stroke="white" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
-                  <path d="M8.5 17.5C10 19 14 19 15.5 17.5S18 13.5 16 12c-2-1.5-1-3.5 0-5s-3-2-4.5-.5S9 10 11 11.5s1 3 0 4.5S7 16 8.5 17.5z" stroke="white" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
-                  <circle cx="12" cy="12" r="1.5" fill="white" opacity="0.9"/>
-                  <circle cx="10" cy="10.5" r="0.6" fill="white" opacity="0.5"/>
-                  <circle cx="14" cy="13.5" r="0.6" fill="white" opacity="0.5"/>
+                {/* AI Bill Scanner icon */}
+                <svg width="38" height="38" viewBox="0 0 48 48" fill="none" style={{ position: "relative", zIndex: 2, filter: "drop-shadow(0 0 8px rgba(255,255,255,0.45))" }}>
+                  <defs>
+                    <linearGradient id="cScanGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%"   stopColor="white" stopOpacity="0"/>
+                      <stop offset="20%"  stopColor="white" stopOpacity="1"/>
+                      <stop offset="80%"  stopColor="white" stopOpacity="1"/>
+                      <stop offset="100%" stopColor="white" stopOpacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  {/* Receipt outline with folded corner */}
+                  <path d="M10 3 L34 3 L42 11 L42 45 L10 45 Z"
+                    stroke="white" strokeWidth="2" strokeLinejoin="round"
+                    fill="rgba(255,255,255,0.07)"/>
+                  <path d="M34 3 L34 11 L42 11"
+                    stroke="white" strokeWidth="1.5" strokeLinejoin="round"
+                    fill="none" strokeOpacity="0.6"/>
+                  {/* Bill text rows */}
+                  <line x1="15" y1="19" x2="37" y2="19" stroke="white" strokeWidth="1.4" strokeOpacity="0.28" strokeLinecap="round"/>
+                  <line x1="15" y1="25" x2="37" y2="25" stroke="white" strokeWidth="1.4" strokeOpacity="0.28" strokeLinecap="round"/>
+                  <line x1="15" y1="31" x2="29" y2="31" stroke="white" strokeWidth="1.4" strokeOpacity="0.28" strokeLinecap="round"/>
+                  <line x1="15" y1="37" x2="32" y2="37" stroke="white" strokeWidth="1.4" strokeOpacity="0.28" strokeLinecap="round"/>
+                  {/* Scan beam */}
+                  <rect className="ai-cscan-beam" x="6" y="21" width="36" height="3"   fill="url(#cScanGrad)" rx="1.5"/>
+                  <rect className="ai-cscan-beam" x="6" y="20" width="36" height="5"   fill="url(#cScanGrad)" rx="2.5" opacity="0.25"/>
+                  {/* AI dot riding the beam */}
+                  <circle className="ai-cscan-dot" cx="44" cy="22.5" r="3.5" fill="white" fillOpacity="0.95"/>
+                  <line className="ai-cscan-dot" x1="44" y1="19.5" x2="44" y2="25.5" stroke="rgba(99,102,241,0.9)" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line className="ai-cscan-dot" x1="41"  y1="22.5" x2="47"  y2="22.5" stroke="rgba(99,102,241,0.9)" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
               </div>
             </div>
@@ -1410,12 +1465,18 @@ export default function Home() {
             0%, 100% { box-shadow: 0 0 0 4px rgba(99,102,241,0.15), 0 0 0 8px rgba(99,102,241,0.08), 0 10px 30px rgba(99,102,241,0.35), inset 0 -6px 16px rgba(67,56,202,0.4), inset 0 6px 16px rgba(165,180,252,0.3); }
             50% { box-shadow: 0 0 0 6px rgba(99,102,241,0.2), 0 0 0 12px rgba(99,102,241,0.1), 0 14px 40px rgba(99,102,241,0.45), inset 0 -6px 16px rgba(67,56,202,0.5), inset 0 6px 16px rgba(165,180,252,0.4); }
           }
-          .ai-center-icon {
-            animation: ai-icon-rot 25s linear infinite;
+          .ai-cscan-beam {
+            transform-box: fill-box;
+            animation: ai-cscan-sweep 2.2s ease-in-out infinite;
           }
-          @keyframes ai-icon-rot {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+          .ai-cscan-dot {
+            transform-box: fill-box;
+            animation: ai-cscan-sweep 2.2s ease-in-out infinite;
+          }
+          @keyframes ai-cscan-sweep {
+            0%   { transform: translateY(-7px); }
+            50%  { transform: translateY(14px); }
+            100% { transform: translateY(-7px); }
           }
           .ai-feat-float-1 {
             animation: ai-feat-bob 3s ease-in-out infinite;

@@ -96,9 +96,9 @@ export function TopBar() {
         supabase.from('batches').select('id', { count: 'exact' }).eq('pharmacy_id', pharmacyId).lt('expiry_date', today).limit(1),
       ]);
 
-      if (lowStockRes.error) console.error('Low stock error:', lowStockRes.error);
-      if (expirySoonRes.error) console.error('Expiry soon error:', expirySoonRes.error);
-      if (expiredRes.error) console.error('Expired error:', expiredRes.error);
+      if (lowStockRes.error) console.error('Low stock error:', lowStockRes.error?.message || JSON.stringify(lowStockRes.error));
+      if (expirySoonRes.error) console.error('Expiry soon error:', expirySoonRes.error?.message || JSON.stringify(expirySoonRes.error));
+      if (expiredRes.error) console.error('Expired error:', expiredRes.error?.message || JSON.stringify(expiredRes.error));
 
       const dynamic: AppNotice[] = [];
 
@@ -133,7 +133,7 @@ export function TopBar() {
     } finally {
       setLoadingNotices(false);
     }
-  }, [pharmacyId, supabase]);
+  }, [pharmacyId]);
 
   useEffect(() => {
     fetchNotices();

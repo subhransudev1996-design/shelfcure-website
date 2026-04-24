@@ -18,7 +18,7 @@ import {
 interface Purchase {
   id: string;
   bill_number: string | null;
-  supplier_name: string;
+  supplier_name: string; // mapped from suppliers(name) join
   bill_date: string;
   total_amount: number;
   payment_status: string;
@@ -114,16 +114,20 @@ export default function PurchasesPage() {
     if (!pharmacyId) { setLoading(false); return; }
     setLoading(true);
     try {
-      let q = supabase
+      const { data, error } = await supabase
         .from('purchases')
-        .select('id, bill_number, supplier_name, bill_date, total_amount, payment_status')
+        .select('id, bill_number, supplier_id, bill_date, total_amount, payment_status, suppliers(name)')
         .eq('pharmacy_id', pharmacyId)
         .order('bill_date', { ascending: false })
         .limit(300);
 
-      const { data, error } = await q;
       if (error) throw error;
-      setPurchases(data || []);
+      setPurchases(
+        (data || []).map((p: any) => ({
+          ...p,
+          supplier_name: p.suppliers?.name || '—',
+        }))
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -202,15 +206,23 @@ export default function PurchasesPage() {
     try {
       const totAmt = purItems.reduce((s, item) => s + item.purchase_rate * item.quantity, 0);
 
+      // Look up supplier by name to get their ID
+      const { data: supplierRow } = await supabase
+        .from('suppliers')
+        .select('id')
+        .eq('pharmacy_id', pharmacyId)
+        .ilike('name', purSupplier.trim())
+        .maybeSingle();
+
       const { data: purchase, error: purErr } = await supabase
         .from('purchases')
         .insert({
           pharmacy_id: pharmacyId,
           bill_number: purBillNo || null,
-          supplier_name: purSupplier,
+          supplier_id: supplierRow?.id || null,
           bill_date: purDate,
           total_amount: totAmt,
-          payment_status: 'paid', // Defaulting per original schema
+          payment_status: 'paid',
         })
         .select('id')
         .single();
@@ -236,9 +248,8 @@ export default function PurchasesPage() {
           medicine_id: medId,
           batch_number: item.batch_number || 'N/A',
           expiry_date: item.expiry_date || '2099-12-31',
-          received_quantity: item.quantity + item.free_quantity,
-          current_quantity: item.quantity + item.free_quantity,
-          purchase_rate: item.purchase_rate,
+          stock_quantity: item.quantity + item.free_quantity,
+          purchase_price: item.purchase_rate,
           mrp: item.mrp || item.purchase_rate,
         });
 

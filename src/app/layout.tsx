@@ -28,6 +28,11 @@ export const metadata: Metadata = {
     "pharmacy billing",
     "medicine tracking",
   ],
+  icons: {
+    icon: "/Icon.png",
+    shortcut: "/Icon.png",
+    apple: "/Icon.png",
+  },
   openGraph: {
     title: "ShelfCure — AI-Powered Pharmacy Management",
     description:

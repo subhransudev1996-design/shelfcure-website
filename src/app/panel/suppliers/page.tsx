@@ -21,6 +21,7 @@ interface Supplier {
   email: string | null;
   gstin: string | null;
   outstanding_balance: number;
+  created_at: string;
 }
 
 /* ─── Palette ────────────────────────────────────────── */
@@ -82,14 +83,13 @@ export default function SuppliersPage() {
     try {
       const { data, error } = await supabase
         .from('suppliers')
-        .select('id, name, phone, email, gstin, outstanding_balance')
+        .select('id, name, phone, email, gstin, outstanding_balance, created_at')
         .eq('pharmacy_id', pharmacyId)
-        .is('deleted_at', null)
         .order('name')
         .limit(500);
 
       if (error) throw error;
-      setSuppliers(data || []);
+      setSuppliers((data || []).map(s => ({ ...s, outstanding_balance: s.outstanding_balance || 0 })));
     } catch (err) {
       console.error(err);
     } finally {
@@ -132,7 +132,6 @@ export default function SuppliersPage() {
         phone: newPhone.trim() || null,
         email: newEmail.trim() || null,
         gstin: newGstin.trim().toUpperCase() || null,
-        outstanding_balance: 0,
       });
       if (error) throw error;
       toast.success('Supplier added successfully!');

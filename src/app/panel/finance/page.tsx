@@ -116,24 +116,37 @@ export default function FinancePage() {
     if (!pid) { setLoading(false); return; }
     setLoading(true);
     try {
-      const [expRes, catRes] = await Promise.all([
-        supabase
-          .from('expenses')
-          .select('id, category, description, amount, expense_date, category_id, payment_method, notes')
-          .eq('pharmacy_id', pid)
-          .gte('expense_date', fromDate)
-          .lte('expense_date', toDate)
-          .order('expense_date', { ascending: false })
-          .limit(500),
-        supabase
+      // Query expenses — use wildcard to avoid breaking on missing columns
+      const expRes = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('pharmacy_id', pid)
+        .gte('expense_date', fromDate)
+        .lte('expense_date', toDate)
+        .order('expense_date', { ascending: false })
+        .limit(500);
+
+      if (expRes.error) throw expRes.error;
+
+      // Map payment_mode → payment_method for backward compatibility
+      const mapped = (expRes.data || []).map((e: any) => ({
+        ...e,
+        payment_method: e.payment_method || e.payment_mode || null,
+      }));
+      setExpenses(mapped);
+
+      // Try loading expense_categories — may not exist yet
+      try {
+        const catRes = await supabase
           .from('expense_categories')
           .select('*')
           .eq('pharmacy_id', pid)
-          .order('name', { ascending: true }),
-      ]);
-      if (expRes.error) throw expRes.error;
-      setExpenses(expRes.data || []);
-      setCategories(catRes.data || []);
+          .order('name', { ascending: true });
+        setCategories(catRes.data || []);
+      } catch {
+        // Table doesn't exist yet — use empty categories
+        setCategories([]);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -185,16 +198,21 @@ export default function FinancePage() {
     setSaving(true);
     try {
       const selectedCat = categories.find(c => c.id === Number(form.category_id));
-      const { error } = await supabase.from('expenses').insert({
+      // Build payload with only guaranteed columns first
+      const payload: Record<string, any> = {
         pharmacy_id: pid,
-        category_id: form.category_id ? Number(form.category_id) : null,
-        category: selectedCat?.name || 'Uncategorized',
+        category: selectedCat?.name || form.description.trim().split(' ')[0] || 'Uncategorized',
         description: form.description.trim(),
         amount: amt,
         expense_date: form.expense_date,
-        payment_method: form.payment_method,
-        notes: form.notes.trim() || null,
-      });
+        payment_mode: form.payment_method,
+      };
+      // Add new columns if migration has been applied (safe — PostgREST ignores unknown cols on insert)
+      if (form.category_id) payload.category_id = form.category_id;
+      if (form.payment_method) payload.payment_method = form.payment_method;
+      if (form.notes.trim()) payload.notes = form.notes.trim();
+
+      const { error } = await supabase.from('expenses').insert(payload);
       if (error) throw error;
       toast.success('Expense recorded successfully!');
       setShowAdd(false);

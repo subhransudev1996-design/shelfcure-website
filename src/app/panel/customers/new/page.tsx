@@ -130,7 +130,7 @@ export default function AddCustomerPage() {
         phone: form.phone.trim(),
         email: form.email.trim() || null,
         address: form.address.trim() || null,
-        credit_balance: 0,
+        outstanding_balance: 0,
       };
       // Insert optional fields only if the columns exist (safe upsert)
       if (form.gstin.trim()) payload.gstin = form.gstin.trim().toUpperCase();

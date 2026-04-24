@@ -127,6 +127,7 @@ export default function AddSupplierPage() {
     }
     setLoading(true);
     try {
+      // Insert all supplier columns now that the migration adds them
       const payload: Record<string, any> = {
         pharmacy_id: pharmacyId,
         name: form.name.trim(),
@@ -138,9 +139,10 @@ export default function AddSupplierPage() {
         city: form.city.trim() || null,
         state: form.state.trim() || null,
         pincode: form.pincode.trim() || null,
-        credit_limit: form.credit_limit ? Number(form.credit_limit) : 0,
-        credit_days: form.credit_days ? Number(form.credit_days) : 0,
-        outstanding_balance: 0,
+        outstanding_balance: form.opening_balance ? Number(form.opening_balance) : 0,
+        opening_balance: form.opening_balance ? Number(form.opening_balance) : 0,
+        credit_limit: form.credit_limit ? Number(form.credit_limit) : null,
+        credit_days: form.credit_days ? Number(form.credit_days) : null,
       };
 
       const { error: err } = await supabase.from('suppliers').insert(payload);

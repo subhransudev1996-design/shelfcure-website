@@ -91,9 +91,11 @@ export default function PurchaseReturnsPage() {
           .select(`
             id, return_number, return_date, total_amount, bill_number, supplier_id,
             suppliers(name),
+            purchases(bill_number),
             purchase_return_items(id)
           `)
           .eq('pharmacy_id', pharmacyId)
+          .is('deleted_at', null)
           .order('return_date', { ascending: false })
           .limit(10000);
 
@@ -106,12 +108,12 @@ export default function PurchaseReturnsPage() {
           total_amount: r.total_amount ?? 0,
           item_count: Array.isArray(r.purchase_return_items) ? r.purchase_return_items.length : 0,
           supplier_name: r.suppliers?.name ?? null,
-          bill_number: r.bill_number ?? null,
+          bill_number: r.purchases?.bill_number ?? r.bill_number ?? null,
         }));
 
         setReturns(mapped);
-      } catch (err) {
-        console.error('Failed to fetch purchase returns:', err);
+      } catch (err: any) {
+        console.error('Purchase returns load error:', err?.message || err?.details || err?.hint || err);
       } finally {
         setLoading(false);
       }
@@ -130,7 +132,7 @@ export default function PurchaseReturnsPage() {
         (record.supplier_name?.toLowerCase().includes(q) ?? false);
       if (!matchesSearch) return false;
 
-      const rDate = new Date(record.return_date + 'Z');
+      const rDate = new Date(record.return_date);
       switch (selectedDateFilter) {
         case 'today': return isToday(rDate);
         case 'yesterday': return isYesterday(rDate);
@@ -179,11 +181,11 @@ export default function PurchaseReturnsPage() {
 
   /* ─── Formatters ────────────────────────────────────── */
   function fmtDate(iso: string) {
-    const d = new Date(iso + 'Z');
+    const d = new Date(iso);
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   }
   function fmtTime(iso: string) {
-    const d = new Date(iso + 'Z');
+    const d = new Date(iso);
     return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
   }
 

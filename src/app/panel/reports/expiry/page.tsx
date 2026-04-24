@@ -31,10 +31,9 @@ interface ExpiryItem {
   expiry_date: string;
   days_to_expiry: number;
   is_expired: boolean;
-  current_quantity: number;
-  purchase_rate: number;
+  stock_quantity: number;
+  purchase_price: number;
   mrp: number;
-  gst_percentage: number;
   value_at_mrp: number;
   purchase_id: number | null;
   purchase_item_id: number | null;
@@ -81,8 +80,8 @@ function ReturnModal({
   const supabase = createClient();
   const [returnQty, setReturnQty] = useState<Record<number, number>>(() => {
     const map: Record<number, number> = {};
-    for (const g of supplierGroups) for (const item of g.items) map[item.batch_id] = item.current_quantity;
-    for (const item of writeOffItems) map[item.batch_id] = item.current_quantity;
+    for (const g of supplierGroups) for (const item of g.items) map[item.batch_id] = item.stock_quantity;
+    for (const item of writeOffItems) map[item.batch_id] = item.stock_quantity;
     return map;
   });
   const [submitting, setSubmitting] = useState(false);
@@ -96,9 +95,9 @@ function ReturnModal({
     for (const item of group.items) {
       const qty = returnQty[item.batch_id] ?? 0;
       if (qty <= 0) continue;
-      const line = qty * item.purchase_rate;
+      const line = qty * item.purchase_price;
       subtotal += line;
-      gstAmount += line * (item.gst_percentage / 100);
+      gstAmount += line * (0 / 100);
     }
     return { subtotal, gstAmount, total: subtotal + gstAmount };
   }
@@ -119,8 +118,8 @@ function ReturnModal({
         for (const item of group.items) {
           const qty = returnQty[item.batch_id] ?? 0;
           if (qty <= 0) continue;
-          const line = qty * item.purchase_rate;
-          const lineGst = line * (item.gst_percentage / 100);
+          const line = qty * item.purchase_price;
+          const lineGst = line * (0 / 100);
           subtotal += line; gstAmount += lineGst;
           groupItems.push({
             purchase_item_id: item.purchase_item_id ?? 0,
@@ -161,8 +160,8 @@ function ReturnModal({
         // Deduct stock
         for (const item of groupItems) {
           const origItem = group.items.find(i => i.batch_id === item.batch_id);
-          const newQty = Math.max(0, (origItem?.current_quantity ?? 0) - item.quantity);
-          await supabase.from('batches').update({ current_quantity: newQty }).eq('id', item.batch_id);
+          const newQty = Math.max(0, (origItem?.stock_quantity ?? 0) - item.quantity);
+          await supabase.from('batches').update({ stock_quantity: newQty }).eq('id', item.batch_id);
           await supabase.from('inventory_transactions').insert({
             pharmacy_id: pharmacyId,
             batch_id: item.batch_id,
@@ -181,7 +180,7 @@ function ReturnModal({
       for (const item of writeOffItems) {
         const qty = returnQty[item.batch_id] ?? 0;
         if (qty <= 0) continue;
-        const newQty = Math.max(0, item.current_quantity - qty);
+        const newQty = Math.max(0, item.stock_quantity - qty);
         const { error } = await supabase.from('inventory_transactions').insert({
           pharmacy_id: pharmacyId,
           batch_id: item.batch_id,
@@ -193,7 +192,7 @@ function ReturnModal({
           reference_id: null,
         });
         if (!error) {
-          await supabase.from('batches').update({ current_quantity: newQty }).eq('id', item.batch_id);
+          await supabase.from('batches').update({ stock_quantity: newQty }).eq('id', item.batch_id);
           successCount++;
         } else {
           errorCount++;
@@ -269,25 +268,25 @@ function ReturnModal({
                           <p style={{ margin: '3px 0 0', fontSize: 11, color: C.muted }}>
                             Batch <span style={{ fontFamily: 'monospace', color: C.subtle }}>{item.batch_number}</span>
                             {' · '}Exp: <span style={{ color: item.is_expired ? C.rose : C.orange, fontWeight: 700 }}>{item.expiry_date}</span>
-                            {' · '}Avail: <span style={{ color: C.subtle, fontWeight: 700 }}>{item.current_quantity} units</span>
+                            {' · '}Avail: <span style={{ color: C.subtle, fontWeight: 700 }}>{item.stock_quantity} units</span>
                           </p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <button onClick={() => adjustQty(item.batch_id, item.current_quantity, -1)} disabled={qty <= 0}
+                          <button onClick={() => adjustQty(item.batch_id, item.stock_quantity, -1)} disabled={qty <= 0}
                             style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', border: `1px solid ${C.cardBorder}`, color: C.text, cursor: qty <= 0 ? 'not-allowed' : 'pointer', opacity: qty <= 0 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>−</button>
-                          <input type="number" min={0} max={item.current_quantity}
+                          <input type="number" min={0} max={item.stock_quantity}
                             value={qty || ''}
                             onChange={e => {
-                              const v = Math.min(Math.max(parseInt(e.target.value) || 0, 0), item.current_quantity);
+                              const v = Math.min(Math.max(parseInt(e.target.value) || 0, 0), item.stock_quantity);
                               setReturnQty(prev => ({ ...prev, [item.batch_id]: v }));
                             }}
                             style={inp} />
-                          <button onClick={() => adjustQty(item.batch_id, item.current_quantity, 1)} disabled={qty >= item.current_quantity}
-                            style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', border: `1px solid ${C.cardBorder}`, color: C.text, cursor: qty >= item.current_quantity ? 'not-allowed' : 'pointer', opacity: qty >= item.current_quantity ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>+</button>
+                          <button onClick={() => adjustQty(item.batch_id, item.stock_quantity, 1)} disabled={qty >= item.stock_quantity}
+                            style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', border: `1px solid ${C.cardBorder}`, color: C.text, cursor: qty >= item.stock_quantity ? 'not-allowed' : 'pointer', opacity: qty >= item.stock_quantity ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>+</button>
                         </div>
                         <div style={{ width: 90, textAlign: 'right' }}>
-                          <p style={{ margin: 0, fontSize: 11, color: C.muted }}>@{formatCurrency(item.purchase_rate)}</p>
-                          <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: C.orange }}>{formatCurrency(qty * item.purchase_rate)}</p>
+                          <p style={{ margin: 0, fontSize: 11, color: C.muted }}>@{formatCurrency(item.purchase_price)}</p>
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: C.orange }}>{formatCurrency(qty * item.purchase_price)}</p>
                         </div>
                       </div>
                     );
@@ -323,21 +322,21 @@ function ReturnModal({
                       <p style={{ margin: '3px 0 0', fontSize: 11, color: C.muted }}>
                         Batch <span style={{ fontFamily: 'monospace', color: C.subtle }}>{item.batch_number}</span>
                         {' · '}Exp: <span style={{ color: item.is_expired ? C.rose : C.orange, fontWeight: 700 }}>{item.expiry_date}</span>
-                        {' · '}Avail: <span style={{ color: C.subtle, fontWeight: 700 }}>{item.current_quantity} units</span>
+                        {' · '}Avail: <span style={{ color: C.subtle, fontWeight: 700 }}>{item.stock_quantity} units</span>
                       </p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <button onClick={() => adjustQty(item.batch_id, item.current_quantity, -1)} disabled={qty <= 0}
+                      <button onClick={() => adjustQty(item.batch_id, item.stock_quantity, -1)} disabled={qty <= 0}
                         style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', border: `1px solid ${C.cardBorder}`, color: C.text, cursor: qty <= 0 ? 'not-allowed' : 'pointer', opacity: qty <= 0 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>−</button>
-                      <input type="number" min={0} max={item.current_quantity}
+                      <input type="number" min={0} max={item.stock_quantity}
                         value={qty || ''}
                         onChange={e => {
-                          const v = Math.min(Math.max(parseInt(e.target.value) || 0, 0), item.current_quantity);
+                          const v = Math.min(Math.max(parseInt(e.target.value) || 0, 0), item.stock_quantity);
                           setReturnQty(prev => ({ ...prev, [item.batch_id]: v }));
                         }}
                         style={inp} />
-                      <button onClick={() => adjustQty(item.batch_id, item.current_quantity, 1)} disabled={qty >= item.current_quantity}
-                        style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', border: `1px solid ${C.cardBorder}`, color: C.text, cursor: qty >= item.current_quantity ? 'not-allowed' : 'pointer', opacity: qty >= item.current_quantity ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>+</button>
+                      <button onClick={() => adjustQty(item.batch_id, item.stock_quantity, 1)} disabled={qty >= item.stock_quantity}
+                        style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', border: `1px solid ${C.cardBorder}`, color: C.text, cursor: qty >= item.stock_quantity ? 'not-allowed' : 'pointer', opacity: qty >= item.stock_quantity ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>+</button>
                     </div>
                     <div style={{ width: 90, textAlign: 'right' }}>
                       <p style={{ margin: 0, fontSize: 11, color: C.muted }}>MRP</p>
@@ -442,16 +441,16 @@ export default function ExpiryReportPage() {
         .from('batches')
         .select(`
           id, medicine_id, batch_number, expiry_date,
-          current_quantity, purchase_rate, mrp, gst_percentage,
+          stock_quantity, purchase_price, mrp,
           purchase_item_id,
           medicines!inner(name),
-          purchase_items(
+          purchase_items!purchase_item_id(
             id,
             purchases(id, supplier_id, suppliers(id, name))
           )
         `)
         .eq('pharmacy_id', pid)
-        .gt('current_quantity', 0)
+        .gt('stock_quantity', 0)
         .lte('expiry_date', future)
         .order('expiry_date');
 
@@ -476,11 +475,10 @@ export default function ExpiryReportPage() {
             expiry_date: b.expiry_date,
             days_to_expiry: daysToExpiry,
             is_expired,
-            current_quantity: b.current_quantity,
-            purchase_rate: b.purchase_rate,
+            stock_quantity: b.stock_quantity,
+            purchase_price: b.purchase_price,
             mrp: b.mrp,
-            gst_percentage: b.gst_percentage,
-            value_at_mrp: b.current_quantity * b.mrp,
+            value_at_mrp: b.stock_quantity * b.mrp,
             purchase_id: purchase?.id ?? null,
             purchase_item_id: b.purchase_item_id ?? null,
             supplier_id: supplier?.id ?? null,
@@ -488,8 +486,8 @@ export default function ExpiryReportPage() {
           } as ExpiryItem;
         })
       );
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('Expiry report load error:', err?.message || err?.details || err?.hint || err);
     } finally {
       setLoading(false);
     }
@@ -687,8 +685,8 @@ export default function ExpiryReportPage() {
                     )}
                   </div>
                   <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: item.is_expired ? C.rose : C.orange }}>{item.expiry_date}</p>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: C.text }}>{item.current_quantity}</p>
-                  <p style={{ margin: 0, fontSize: 12, color: C.muted }}>{item.purchase_rate > 0 ? formatCurrency(item.purchase_rate) : '—'}</p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: C.text }}>{item.stock_quantity}</p>
+                  <p style={{ margin: 0, fontSize: 12, color: C.muted }}>{item.purchase_price > 0 ? formatCurrency(item.purchase_price) : '—'}</p>
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: C.roseLight }}>{formatCurrency(item.value_at_mrp)}</p>
                   <div>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 99, fontSize: 10, fontWeight: 800, backgroundColor: uc.bg, color: uc.color, border: `1px solid ${uc.border}` }}>

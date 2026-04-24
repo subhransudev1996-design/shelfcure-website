@@ -21,7 +21,7 @@ interface Customer {
   phone: string | null;
   email: string | null;
   address: string | null;
-  credit_balance: number;
+  outstanding_balance: number;
   total_purchases: number;
   created_at: string;
 }
@@ -84,14 +84,13 @@ export default function CustomersPage() {
     try {
       const { data, error } = await supabase
         .from('customers')
-        .select('id, name, phone, email, address, credit_balance, created_at')
+        .select('id, name, phone, email, address, outstanding_balance, total_purchases, created_at')
         .eq('pharmacy_id', pharmacyId)
-        .is('deleted_at', null)
         .order('name')
         .limit(500);
 
       if (error) throw error;
-      setCustomers((data || []).map(c => ({ ...c, total_purchases: 0 }))); // Note: purchases aggregation could be a separate rpc or joined count later
+      setCustomers((data || []).map(c => ({ ...c, outstanding_balance: c.outstanding_balance || 0, total_purchases: c.total_purchases || 0 })));
     } catch (err) {
       console.error(err);
     } finally {
@@ -116,8 +115,8 @@ export default function CustomersPage() {
   }, [customers, search]);
 
   /* ─── Stats ─── */
-  const creditTotal = customers.reduce((s, c) => s + (c.credit_balance || 0), 0);
-  const withCreditCount = customers.filter(c => (c.credit_balance || 0) > 0).length;
+  const creditTotal = customers.reduce((s, c) => s + (c.outstanding_balance || 0), 0);
+  const withCreditCount = customers.filter(c => (c.outstanding_balance || 0) > 0).length;
   
   const thisMonthCount = useMemo(() => {
     const startOfMonth = new Date();
@@ -140,7 +139,7 @@ export default function CustomersPage() {
         phone: newPhone.trim() || null,
         email: newEmail.trim() || null,
         address: newAddress.trim() || null,
-        credit_balance: 0,
+        outstanding_balance: 0,
       });
       if (error) throw error;
       toast.success('Customer added successfully!');
@@ -249,7 +248,7 @@ export default function CustomersPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
           {filtered.map(c => {
             const initial = (c.name || '?').charAt(0).toUpperCase();
-            const hasCredit = (c.credit_balance || 0) > 0;
+            const hasCredit = (c.outstanding_balance || 0) > 0;
             return (
               <div
                 key={c.id}
@@ -308,7 +307,7 @@ export default function CustomersPage() {
                   {hasCredit ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 6, backgroundColor: `${C.rose}10`, border: `1px solid ${C.rose}15`, color: C.rose }}>
                       <IndianRupee style={{ width: 10, height: 10 }} />
-                      <span style={{ fontSize: 11, fontWeight: 900 }}>{formatCurrency(c.credit_balance)} due</span>
+                      <span style={{ fontSize: 11, fontWeight: 900 }}>{formatCurrency(c.outstanding_balance)} due</span>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 6, backgroundColor: `${C.emerald}10`, border: `1px solid ${C.emerald}15`, color: C.emerald }}>

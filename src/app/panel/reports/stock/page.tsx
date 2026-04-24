@@ -54,10 +54,9 @@ export default function StockReportPage() {
     try {
       const { data: batches } = await supabase
         .from('batches')
-        .select('medicine_id, current_quantity, mrp, expiry_date, medicines(name, min_stock_level)')
+        .select('medicine_id, stock_quantity, mrp, expiry_date, medicines(name, min_stock_level)')
         .eq('pharmacy_id', pid)
-        .gt('current_quantity', 0)
-        .is('deleted_at', null);
+        .gt('stock_quantity', 0);
 
       const map = new Map<number, StockSummaryItem>();
       const today = new Date();
@@ -71,8 +70,8 @@ export default function StockReportPage() {
 
         const existing = map.get(b.medicine_id);
         if (existing) {
-          existing.total_quantity += b.current_quantity;
-          existing.stock_value    += b.current_quantity * b.mrp;
+          existing.total_quantity += b.stock_quantity;
+          existing.stock_value    += b.stock_quantity * b.mrp;
           existing.batch_count    += 1;
           // keep nearest expiry
           if (expDate && (!existing.nearest_expiry || expDate < new Date(existing.nearest_expiry))) {
@@ -83,8 +82,8 @@ export default function StockReportPage() {
           map.set(b.medicine_id, {
             medicine_id:    b.medicine_id,
             medicine_name:  medName,
-            total_quantity: b.current_quantity,
-            stock_value:    b.current_quantity * b.mrp,
+            total_quantity: b.stock_quantity,
+            stock_value:    b.stock_quantity * b.mrp,
             batch_count:    1,
             min_stock_level: minLevel,
             is_low_stock:   false, // computed below

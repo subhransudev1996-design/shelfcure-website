@@ -204,7 +204,7 @@ export default function CreateChallanPage() {
         // Check if a batch with same medicine+batch_number already exists for this challan context
         const { data: existingBatch } = await supabase
           .from('batches')
-          .select('id, current_quantity, received_quantity')
+          .select('id, stock_quantity')
           .eq('pharmacy_id', pharmacyId)
           .eq('medicine_id', line.medicine_id)
           .eq('batch_number', line.batch_number || `CHN-${Date.now().toString().slice(-6)}`)
@@ -214,14 +214,11 @@ export default function CreateChallanPage() {
 
         if (existingBatch) {
           // Update existing batch quantity
-          const newQty = (existingBatch.current_quantity || 0) + qty;
-          const newReceived = (existingBatch.received_quantity || 0) + qty;
+          const newQty = (existingBatch.stock_quantity || 0) + qty;
           await supabase
             .from('batches')
             .update({
-              current_quantity: newQty,
-              received_quantity: newReceived,
-              updated_at: new Date().toISOString(),
+              stock_quantity: newQty,
             })
             .eq('id', existingBatch.id);
           batchId = existingBatch.id;
@@ -234,9 +231,8 @@ export default function CreateChallanPage() {
               medicine_id: line.medicine_id,
               batch_number: line.batch_number || `CHN-${Date.now().toString().slice(-6)}`,
               expiry_date: line.expiry_date || `${new Date().getFullYear() + 2}-12-31`,
-              received_quantity: qty,
-              current_quantity: qty,
-              purchase_rate: line.purchase_rate,
+              stock_quantity: qty,
+              purchase_price: line.purchase_rate,
               mrp: line.mrp,
               challan_id: challan.id,
             })

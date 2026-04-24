@@ -12,15 +12,19 @@ import {
 
 /* ─── Types ─────────────────────────────────────────── */
 interface Challan {
-  id: number;
+  id: string;
   challan_number: string | null;
+  supplier_id: string | null;
   supplier_name: string;
-  challan_date: string;
   status: string;
-  total_items: number;
   total_quantity: number;
+  total_items: number;
+  notes: string | null;
+  created_at: string;
+  // These may not exist in the current schema
+  challan_date: string;
   expected_return_date: string | null;
-  linked_purchase_id: number | null;
+  linked_purchase_id: string | null;
 }
 
 type DatePreset = 'today' | 'yesterday' | 'week' | 'month' | 'all';
@@ -105,15 +109,26 @@ export default function ChallansPage() {
     if (!pharmacyId) { setLoading(false); return; }
     setLoading(true);
     try {
+      // Use wildcard + supplier join to avoid missing-column errors
       const { data, error } = await supabase
         .from('challans')
-        .select('id, challan_number, supplier_name, challan_date, status, total_items, total_quantity, expected_return_date, linked_purchase_id')
+        .select('*, suppliers(name)')
         .eq('pharmacy_id', pharmacyId)
-        .order('challan_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(500);
 
       if (error) throw error;
-      setChallans(data || []);
+      // Map the joined supplier name and provide fallbacks for optional fields
+      const mapped = (data || []).map((c: any) => ({
+        ...c,
+        supplier_name: c.suppliers?.name || 'Unknown Supplier',
+        challan_date: c.challan_date || c.created_at,
+        total_items: c.total_items || 0,
+        total_quantity: c.total_quantity || 0,
+        expected_return_date: c.expected_return_date || null,
+        linked_purchase_id: c.linked_purchase_id || null,
+      }));
+      setChallans(mapped);
     } catch (err) {
       console.error(err);
     } finally {
