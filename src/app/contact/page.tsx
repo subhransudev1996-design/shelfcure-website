@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
+import { useTypewriter } from "@/components/HeroSection";
 import { Icons } from "@/components/Icons";
 
 /* ═══════════════════════════════════════════════════════════
@@ -29,6 +30,8 @@ export default function ContactPage() {
   const hero = useInView(0.1);
   const contactDetails = useInView(0.1);
   const faq = useInView(0.1);
+
+  const displayText = useTypewriter(["scale.", "grow.", "succeed.", "thrive."], 80, 2000, 40);
 
   const [formState, setFormState] = useState({ name: "", email: "", subject: "General Inquiry", message: "" });
   const [submitted, setSubmitted] = useState(false);
@@ -127,7 +130,11 @@ export default function ContactPage() {
               marginBottom: "1.5rem"
             }}
           >
-            We're here to help you <span style={{ background: "linear-gradient(135deg, #818cf8, #c7d2fe)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>scale.</span>
+            We&apos;re here to help you{' '}
+            <span style={{ background: "linear-gradient(135deg, #818cf8, #c7d2fe, #a78bfa)", backgroundSize: "200% 200%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "gradient-shift 4s ease-in-out infinite" }}>
+              {displayText}
+              <span style={{ display: "inline-block", width: "3px", height: "1em", background: "#818cf8", marginLeft: "4px", animation: "blink 1s step-end infinite", verticalAlign: "text-bottom" }} />
+            </span>
           </h1>
           
           <p
@@ -420,6 +427,14 @@ export default function ContactPage() {
         @keyframes fadeIn {
            from { opacity: 0; transform: translateY(10px); }
            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes gradient-shift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
         }
         
         @media (max-width: 900px) {

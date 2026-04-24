@@ -368,22 +368,36 @@ export default function PricingPage() {
                 </p>
               </div>
 
-              <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2.5rem 0", display: "grid", gap: "1rem", flex: 1 }}>
+              {/* All 7 modules */}
+              <div style={{ marginBottom: "1.5rem", padding: "1.25rem", background: "#f8fafc", borderRadius: "1rem", border: "1px solid rgba(99,102,241,0.08)" }}>
+                <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#6366f1", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.875rem" }}>All 7 modules included</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                  {["Smart Billing", "Inventory Control", "GST & Compliance", "Reports & Profit", "Customer & Credit", "Supplier Management", "Promotions"].map(m => (
+                    <div key={m} style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.78rem", color: "#475569", fontWeight: 500 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                      {m}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2.5rem 0", display: "grid", gap: "0.875rem", flex: 1 }}>
+                <li style={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Plan perks</li>
                 {plans.annual.features.map((f) => (
                   <li key={f.text} style={{
                     display: "flex", alignItems: "center", gap: "0.75rem",
-                    color: f.included ? "#475569" : "#cbd5e1", fontWeight: 500, fontSize: "0.95rem",
+                    color: f.included ? "#475569" : "#cbd5e1", fontWeight: 500, fontSize: "0.9rem",
                   }}>
                     <div style={{
-                      width: 22, height: 22,
+                      width: 20, height: 20,
                       background: f.included ? "linear-gradient(135deg, #6366f1, #818cf8)" : "#f1f5f9",
                       color: f.included ? "white" : "#cbd5e1",
                       borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                       flexShrink: 0,
                     }}>
                       {f.included
-                        ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
-                        : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                        : <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                       }
                     </div>
                     <span style={{ textDecoration: f.included ? "none" : "line-through" }}>{f.text}</span>
@@ -440,7 +454,11 @@ export default function PricingPage() {
                       background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)",
                       color: "white", fontSize: "0.65rem", fontWeight: 800,
                       border: "1px solid rgba(255,255,255,0.1)",
-                    }}>🔥 MOST POPULAR</span>
+                      display: "inline-flex", alignItems: "center", gap: "0.3rem",
+                    }}>
+                      <span style={{ color: "#fbbf24" }}>{Icons.flame}</span>
+                      MOST POPULAR
+                    </span>
                   )}
                 </div>
 
@@ -480,20 +498,34 @@ export default function PricingPage() {
                 </div>
               </div>
 
-              <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2.5rem 0", display: "grid", gap: "1rem", flex: 1, position: "relative", zIndex: 1 }}>
+              {/* All 7 modules */}
+              <div style={{ marginBottom: "1.5rem", padding: "1.25rem", background: "rgba(255,255,255,0.05)", borderRadius: "1rem", border: "1px solid rgba(165,180,252,0.15)", position: "relative", zIndex: 1 }}>
+                <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#a5b4fc", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.875rem" }}>All 7 modules included</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                  {["Smart Billing", "Inventory Control", "GST & Compliance", "Reports & Profit", "Customer & Credit", "Supplier Management", "Promotions"].map(m => (
+                    <div key={m} style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.78rem", color: "rgba(255,255,255,0.75)", fontWeight: 500 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                      {m}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2.5rem 0", display: "grid", gap: "0.875rem", flex: 1, position: "relative", zIndex: 1 }}>
+                <li style={{ fontSize: "0.7rem", fontWeight: 700, color: "rgba(165,180,252,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Plan perks</li>
                 {plans.lifetime.features.map((f) => (
                   <li key={f.text} style={{
                     display: "flex", alignItems: "center", gap: "0.75rem",
-                    color: "rgba(255,255,255,0.85)", fontWeight: 500, fontSize: "0.95rem",
+                    color: "rgba(255,255,255,0.85)", fontWeight: 500, fontSize: "0.9rem",
                   }}>
                     <div style={{
-                      width: 22, height: 22,
+                      width: 20, height: 20,
                       background: "rgba(129,140,248,0.2)",
                       color: "#a5b4fc",
                       borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                       flexShrink: 0,
                     }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
                     </div>
                     {f.text}
                   </li>
@@ -543,9 +575,9 @@ export default function PricingPage() {
             maxWidth: "800px", margin: "0 auto",
           }}>
             {[
-              { value: `${pharmacies.toLocaleString()}+`, label: "Pharmacies Trust Us", icon: "🏪" },
-              { value: `${uptime}.9%`, label: "Uptime Record", icon: "⚡" },
-              { value: `${invoices}M+`, label: "Invoices Processed", icon: "📄" },
+              { value: `${pharmacies.toLocaleString()}+`, label: "Pharmacies Trust Us", icon: Icons.store },
+              { value: `${uptime}.9%`, label: "Uptime Record", icon: Icons.zap },
+              { value: `${invoices}M+`, label: "Invoices Processed", icon: Icons.fileText },
             ].map((stat, i) => (
               <div
                 key={stat.label}
@@ -566,7 +598,7 @@ export default function PricingPage() {
                   e.currentTarget.style.boxShadow = "none";
                 }}
               >
-                <div style={{ fontSize: "1.75rem", marginBottom: "0.5rem" }}>{stat.icon}</div>
+                <div style={{ color: "#6366f1", marginBottom: "0.75rem", display: "flex", justifyContent: "center", transform: "scale(1.35)" }}>{stat.icon}</div>
                 <div style={{
                   fontSize: "2rem", fontWeight: 800, color: "#0f172a",
                   fontFamily: "var(--font-display)",

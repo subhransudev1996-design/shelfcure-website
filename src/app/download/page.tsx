@@ -297,16 +297,16 @@ export default function DownloadPage() {
             }}
           >
             {[
-              { label: "v2.4.0", icon: "📦" },
-              { label: "84 MB", icon: "💾" },
-              { label: "Windows 10+", icon: "🪟" },
-              { label: "Free Trial", icon: "🎁" },
+              { label: "v2.4.0", icon: Icons.box },
+              { label: "84 MB", icon: Icons.hardDrive },
+              { label: "Windows 10+", icon: Icons.windows },
+              { label: "Free Trial", icon: Icons.gift },
             ].map(item => (
               <div key={item.label} style={{
                 display: "flex", alignItems: "center", gap: "0.4rem",
                 fontSize: "0.8rem", color: "rgba(148,163,184,0.6)", fontWeight: 600,
               }}>
-                <span>{item.icon}</span>
+                <span style={{ display: "flex" }}>{item.icon}</span>
                 {item.label}
               </div>
             ))}
@@ -328,9 +328,9 @@ export default function DownloadPage() {
             maxWidth: "700px", margin: "0 auto",
           }}>
             {[
-              { value: `${downloads.toLocaleString()}+`, label: "Total Downloads", icon: "📥" },
-              { value: `${(rating / 10).toFixed(1)} ★`, label: "User Rating", icon: "⭐" },
-              { value: `${size} MB`, label: "Installer Size", icon: "💾" },
+              { value: `${downloads.toLocaleString()}+`, label: "Total Downloads", icon: Icons.inbox },
+              { value: `${(rating / 10).toFixed(1)} ★`, label: "User Rating", icon: Icons.star },
+              { value: `${size} MB`, label: "Installer Size", icon: Icons.hardDrive },
             ].map((stat, i) => (
               <div
                 key={stat.label}
@@ -353,7 +353,7 @@ export default function DownloadPage() {
                   e.currentTarget.style.boxShadow = "none";
                 }}
               >
-                <div style={{ fontSize: "1.25rem", marginBottom: "0.4rem" }}>{stat.icon}</div>
+                <div style={{ color: "rgba(255,255,255,0.85)", marginBottom: "0.5rem", display: "flex", justifyContent: "center" }}>{stat.icon}</div>
                 <div style={{
                   fontSize: "1.75rem", fontWeight: 800, color: "white",
                   fontFamily: "var(--font-display)",
@@ -418,9 +418,9 @@ export default function DownloadPage() {
                 width: 90, height: 90, borderRadius: "1.5rem",
                 background: "linear-gradient(135deg, #0078d4, #00a4ef)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "3rem", flexShrink: 0,
+                color: "white", flexShrink: 0,
                 boxShadow: "0 8px 24px rgba(0,120,212,0.2)",
-              }}>🪟</div>
+              }}><div style={{ transform: "scale(2)" }}>{Icons.windows}</div></div>
 
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", marginBottom: "0.35rem" }}>ShelfCure for Windows</h3>
@@ -524,10 +524,10 @@ export default function DownloadPage() {
             }} />
 
             {[
-              { step: "01", title: "Download", desc: "Click download above. The installer is under 100MB.", icon: "📥", color: "#6366f1" },
-              { step: "02", title: "Install", desc: "Run the installer. No admin rights needed. Takes 30 seconds.", icon: "⚡", color: "#818cf8" },
-              { step: "03", title: "Configure", desc: "Enter your GSTIN. We auto-fetch your business details.", icon: "⚙️", color: "#a78bfa" },
-              { step: "04", title: "Start Billing", desc: "You're live! Scan invoices, bill customers, grow.", icon: "🚀", color: "#7c3aed" },
+              { step: "01", title: "Download", desc: "Click download above. The installer is under 100MB.", icon: Icons.inbox, color: "#6366f1" },
+              { step: "02", title: "Install", desc: "Run the installer. No admin rights needed. Takes 30 seconds.", icon: Icons.zap, color: "#818cf8" },
+              { step: "03", title: "Configure", desc: "Enter your GSTIN. We auto-fetch your business details.", icon: Icons.settings, color: "#a78bfa" },
+              { step: "04", title: "Start Billing", desc: "You're live! Scan invoices, bill customers, grow.", icon: Icons.rocket, color: "#7c3aed" },
             ].map((item, i) => (
               <div
                 key={item.step}
@@ -541,7 +541,7 @@ export default function DownloadPage() {
                   width: 64, height: 64, borderRadius: "50%",
                   background: "white", border: `3px solid ${item.color}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  margin: "0 auto 1.5rem", fontSize: "1.75rem",
+                  margin: "0 auto 1.5rem", color: item.color,
                   boxShadow: `0 8px 24px ${item.color}25`,
                   transition: "all 0.3s ease", cursor: "default",
                 }}
@@ -710,8 +710,8 @@ export default function DownloadPage() {
               {/* Store buttons */}
               <div style={{ display: "flex", gap: "1rem" }}>
                 {[
-                  { store: "App Store", sub: "Download on the", icon: "🍎" },
-                  { store: "Google Play", sub: "Get it on", icon: "▶️" },
+                  { store: "App Store", sub: "Download on the", icon: Icons.apple },
+                  { store: "Google Play", sub: "Get it on", icon: Icons.playTriangle },
                 ].map(s => (
                   <div key={s.store} style={{
                     padding: "0.75rem 1.5rem", background: "#0f172a", borderRadius: "0.75rem",
@@ -721,7 +721,7 @@ export default function DownloadPage() {
                   onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.2)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
                   >
-                    <div style={{ fontSize: "1.5rem" }}>{s.icon}</div>
+                    <div style={{ display: "flex", color: "white" }}>{s.icon}</div>
                     <div style={{ textAlign: "left" }}>
                       <div style={{ fontSize: "0.55rem", textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>{s.sub}</div>
                       <div style={{ fontSize: "0.95rem", fontWeight: 700 }}>{s.store}</div>
@@ -837,10 +837,10 @@ export default function DownloadPage() {
             maxWidth: "900px", margin: "0 auto",
           }}>
             {[
-              { title: "Processor", desc: "Intel i3 / Apple M1 or equivalent", icon: "⚡", value: "Dual Core" },
-              { title: "Memory", desc: "4GB minimum, 8GB recommended", icon: "🧠", value: "4GB+" },
-              { title: "Storage", desc: "500MB for app + local database", icon: "💾", value: "500MB" },
-              { title: "Display", desc: "1280×720 minimum resolution", icon: "🖥️", value: "720p" },
+              { title: "Processor", desc: "Intel i3 / Apple M1 or equivalent", icon: Icons.cpu, value: "Dual Core" },
+              { title: "Memory", desc: "4GB minimum, 8GB recommended", icon: Icons.database, value: "4GB+" },
+              { title: "Storage", desc: "500MB for app + local database", icon: Icons.hardDrive, value: "500MB" },
+              { title: "Display", desc: "1280×720 minimum resolution", icon: Icons.monitor, value: "720p" },
             ].map((item, i) => (
               <div
                 key={item.title}
@@ -861,7 +861,7 @@ export default function DownloadPage() {
                   e.currentTarget.style.boxShadow = "none";
                 }}
               >
-                <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>{item.icon}</div>
+                <div style={{ color: "#6366f1", marginBottom: "0.75rem", display: "flex", justifyContent: "center", transform: "scale(1.35)" }}>{item.icon}</div>
                 <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#6366f1", fontFamily: "var(--font-display)", marginBottom: "0.25rem" }}>{item.value}</div>
                 <h4 style={{ fontSize: "1rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.4rem" }}>{item.title}</h4>
                 <p style={{ color: "#94a3b8", fontSize: "0.8rem", lineHeight: 1.5 }}>{item.desc}</p>

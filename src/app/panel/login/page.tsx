@@ -1,0 +1,375 @@
+'use client';
+
+import { useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { useTypewriter } from '@/components/HeroSection';
+import { Eye, EyeOff, LogIn, AlertCircle, Loader2, ShieldCheck, Zap, Users } from 'lucide-react';
+
+export default function PanelLoginPage() {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const displayText = useTypewriter(['ShelfCure.', 'Your Dashboard.', 'Smart Pharmacy.'], 80, 2000, 40);
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function friendlyError(msg: string): string {
+    if (msg.includes('For security purposes') || msg.includes('security purposes')) {
+      const match = msg.match(/after (\d+) seconds?/i);
+      const secs = match ? match[1] : 'a few';
+      return `Too many attempts. Please wait ${secs} seconds before trying again.`;
+    }
+    if (msg.toLowerCase().includes('email not confirmed'))
+      return 'Your email is not verified yet. Please check your inbox and click the confirmation link.';
+    if (msg.toLowerCase().includes('invalid login credentials') || msg.toLowerCase().includes('invalid email or password'))
+      return 'Incorrect email or password. Please try again.';
+    if (msg.includes('rate limit') || msg.includes('429'))
+      return 'Too many requests. Please wait a minute and try again.';
+    return msg;
+  }
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      if (authError) { setError(friendlyError(authError.message)); setLoading(false); return; }
+
+      // Check if super admin
+      const { data: superAdmin } = await supabase
+        .from('super_admins')
+        .select('id')
+        .eq('auth_user_id', authError ? '' : (await supabase.auth.getUser()).data.user?.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (superAdmin) {
+        window.location.href = '/admin';
+      } else {
+        window.location.href = '/panel';
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? friendlyError(err.message) : 'An unexpected error occurred');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      {/* ── Hero Section ── */}
+      <section style={{
+        background: 'linear-gradient(180deg, #0c0a1f 0%, #110e2e 50%, #1a1640 100%)',
+        padding: '7rem 2rem 5rem',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+        color: 'white',
+      }}>
+        {/* Grid background */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: 'linear-gradient(rgba(99,102,241,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.06) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+          maskImage: 'radial-gradient(ellipse 80% 70% at 50% 40%, black 10%, transparent 70%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 70% at 50% 40%, black 10%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Orbs */}
+        <div className="animate-float" style={{
+          position: 'absolute', top: '15%', left: '8%',
+          width: '300px', height: '300px',
+          background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)',
+          filter: 'blur(60px)', pointerEvents: 'none',
+        }} />
+        <div className="animate-float" style={{
+          position: 'absolute', bottom: '10%', right: '5%',
+          width: '400px', height: '400px',
+          background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)',
+          filter: 'blur(60px)', pointerEvents: 'none',
+          animationDelay: '3s',
+        }} />
+        <div className="animate-pulse-glow" style={{
+          position: 'absolute', top: '40%', right: '20%',
+          width: '6px', height: '6px', borderRadius: '50%', background: '#818cf8',
+        }} />
+        <div className="animate-pulse-glow" style={{
+          position: 'absolute', top: '25%', left: '28%',
+          width: '4px', height: '4px', borderRadius: '50%', background: '#c4b5fd',
+          animationDelay: '1.5s',
+        }} />
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {/* Logo */}
+          <div className="animate-fade-in-up" style={{ marginBottom: '2rem' }}>
+            <div style={{
+              display: 'inline-block',
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '1rem',
+              padding: '0.6rem 1.25rem',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+            }}>
+              <Image src="/logo.png" alt="ShelfCure" width={140} height={46} style={{ objectFit: 'contain', display: 'block', width: 'auto', height: 'auto' }} priority />
+            </div>
+          </div>
+
+          {/* Badge */}
+          <div className="animate-fade-in-up delay-100" style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.4rem 1rem',
+            background: 'rgba(99,102,241,0.1)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(99,102,241,0.2)',
+            borderRadius: '9999px',
+            marginBottom: '1.75rem',
+          }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#818cf8', boxShadow: '0 0 12px #818cf8', display: 'inline-block' }} />
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Pharmacy Management Platform
+            </span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="animate-fade-in-up delay-200" style={{
+            fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+            fontWeight: 800, color: 'white',
+            letterSpacing: '-0.03em',
+            fontFamily: 'var(--font-display)',
+            lineHeight: 1.12,
+            marginBottom: '1rem',
+          }}>
+            Welcome Back to<br />
+            <span style={{
+              background: 'linear-gradient(135deg, #818cf8, #c7d2fe, #a78bfa)',
+              backgroundSize: '200% 200%',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              animation: 'gradient-shift 4s ease-in-out infinite',
+            }}>
+              {displayText}
+              <span style={{
+                display: 'inline-block', width: '3px', height: '1em',
+                background: '#818cf8', marginLeft: '4px',
+                animation: 'blink 1s step-end infinite',
+                verticalAlign: 'text-bottom',
+              }} />
+            </span>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="animate-fade-in-up delay-300" style={{
+            fontSize: '1.125rem', color: 'rgba(148,163,184,0.9)',
+            maxWidth: '540px', margin: '0 auto 2.75rem',
+            lineHeight: 1.65, fontWeight: 400,
+          }}>
+            Sign in to access your pharmacy dashboard — billing, inventory, GST reports, and everything your pharmacy needs.
+          </p>
+
+          {/* Trust stats */}
+          <div className="animate-fade-in-up delay-400" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: '3rem', flexWrap: 'wrap',
+          }}>
+            {[
+              { Icon: Users, value: '500+', label: 'Active Pharmacies' },
+              { Icon: Zap, value: '₹10Cr+', label: 'Transactions Managed' },
+              { Icon: ShieldCheck, value: '99.9%', label: 'Uptime SLA' },
+            ].map(({ Icon, value, label }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                <div style={{
+                  width: '2.25rem', height: '2.25rem',
+                  borderRadius: '0.625rem',
+                  background: 'rgba(129,140,248,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Icon size={14} style={{ color: '#818cf8' }} />
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '1.125rem', fontWeight: 800, color: 'white', fontFamily: 'var(--font-display)', lineHeight: 1 }}>{value}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'rgba(148,163,184,0.7)', fontWeight: 500, marginTop: '0.15rem' }}>{label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Form Section ── */}
+      <section style={{
+        background: '#f1f5f9',
+        padding: '4rem 1rem 5rem',
+      }}>
+        <div style={{ maxWidth: '440px', margin: '0 auto' }}>
+
+          {/* Card */}
+          <div className="animate-fade-in-up" style={{
+            background: '#fff',
+            borderRadius: '1.75rem',
+            padding: '2.5rem',
+            boxShadow: '0 20px 60px rgba(15,23,42,0.08), 0 4px 16px rgba(15,23,42,0.04)',
+            border: '1px solid rgba(0,0,0,0.05)',
+          }}>
+            <h2 style={{
+              fontSize: '1.25rem', fontWeight: 800, color: '#0f172a',
+              fontFamily: 'var(--font-display)', letterSpacing: '-0.02em',
+              marginBottom: '0.25rem',
+            }}>Sign in to your account</h2>
+            <p style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 400, marginBottom: '1.75rem' }}>
+              Enter your credentials to continue
+            </p>
+
+            {error && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.625rem',
+                background: '#fef2f2', border: '1px solid #fecaca',
+                borderRadius: '0.875rem', padding: '0.875rem 1rem',
+                marginBottom: '1.5rem',
+              }}>
+                <AlertCircle size={16} style={{ color: '#ef4444', flexShrink: 0 }} />
+                <p style={{ fontSize: '0.875rem', color: '#b91c1c', fontWeight: 500, margin: 0 }}>{error}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {/* Email */}
+              <div>
+                <label style={{
+                  display: 'block', fontSize: '0.7rem', fontWeight: 700,
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                  color: '#475569', marginBottom: '0.5rem',
+                }}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoFocus
+                  placeholder="you@pharmacy.com"
+                  style={{
+                    width: '100%', padding: '0.875rem 1rem',
+                    background: '#fff', border: '1.5px solid #e2e8f0',
+                    borderRadius: '0.875rem', color: '#0f172a',
+                    fontSize: '0.9rem', fontWeight: 500,
+                    outline: 'none', transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                    boxSizing: 'border-box',
+                  }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.1)'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label style={{
+                  display: 'block', fontSize: '0.7rem', fontWeight: 700,
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                  color: '#475569', marginBottom: '0.5rem',
+                }}>
+                  Password
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="••••••••"
+                    style={{
+                      width: '100%', padding: '0.875rem 3rem 0.875rem 1rem',
+                      background: '#fff', border: '1.5px solid #e2e8f0',
+                      borderRadius: '0.875rem', color: '#0f172a',
+                      fontSize: '0.9rem', fontWeight: 500,
+                      outline: 'none', transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.1)'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute', right: '0.75rem', top: '50%',
+                      transform: 'translateY(-50%)',
+                      padding: '0.5rem', border: 'none', background: 'transparent',
+                      cursor: 'pointer', color: '#94a3b8',
+                      display: 'flex', alignItems: 'center',
+                    }}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit */}
+              <div style={{ paddingTop: '0.5rem' }}>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                    width: '100%', padding: '0.9rem',
+                    background: loading ? 'rgba(99,102,241,0.7)' : 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                    color: '#fff', fontWeight: 700, fontSize: '0.95rem',
+                    border: 'none', borderRadius: '0.875rem',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 4px 16px rgba(99,102,241,0.25)',
+                    transition: 'opacity 0.2s ease, transform 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                >
+                  {loading ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <LogIn size={16} />}
+                  {loading ? 'Signing in...' : 'Sign In'}
+                </button>
+              </div>
+            </form>
+
+            <div style={{
+              marginTop: '2rem', paddingTop: '1.5rem',
+              borderTop: '1px solid #f1f5f9', textAlign: 'center',
+            }}>
+              <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>
+                Don&apos;t have an account?{' '}
+                <Link href="/panel/register" style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>
+                  Create one free
+                </Link>
+              </p>
+            </div>
+          </div>
+
+          <p style={{
+            textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8',
+            marginTop: '1.75rem', fontWeight: 500,
+          }}>
+            Powered by ShelfCure • Smart Pharmacy. Simple Care.
+          </p>
+        </div>
+      </section>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes gradient-shift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+      `}</style>
+    </>
+  );
+}

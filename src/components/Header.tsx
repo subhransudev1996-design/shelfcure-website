@@ -17,14 +17,6 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const handleCtaClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (pathname === "/") {
-      e.preventDefault();
-      document.getElementById("cta")?.scrollIntoView({ behavior: "smooth" });
-    }
-    setMobileNav(false);
-  };
-
   const navLinks = [
     { label: "Home", href: "/" },
     { label: "About", href: "/about" },
@@ -67,8 +59,9 @@ export function Header() {
               width={140}
               height={36}
               style={{
-                height: "36px",
                 width: "auto",
+                height: "auto",
+                maxWidth: "140px",
                 objectFit: "contain",
                 filter: scrolled ? "none" : "brightness(10)",
                 transition: "filter 0.35s ease",
@@ -102,8 +95,22 @@ export function Header() {
             })}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }} className="nav-desktop">
-            <Link href="/#cta" onClick={handleCtaClick} className="btn-primary" style={{ padding: "0.625rem 1.5rem", fontSize: "0.875rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }} className="nav-desktop">
+            <Link 
+              href="/panel/login" 
+              style={{
+                color: scrolled ? "var(--color-on-surface-variant)" : "rgba(255,255,255,0.9)",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                textDecoration: "none",
+                transition: "color 0.2s ease"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = "#6366f1"}
+              onMouseLeave={(e) => e.currentTarget.style.color = scrolled ? "var(--color-on-surface-variant)" : "rgba(255,255,255,0.9)"}
+            >
+              Log in
+            </Link>
+            <Link href="/panel/register" className="btn-primary" style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}>
               Get Started
             </Link>
           </div>
@@ -149,8 +156,29 @@ export function Header() {
                 </Link>
               );
             })}
-            <div style={{ marginTop: "1rem", display: "flex", gap: "0.75rem" }}>
-              <Link href="/#cta" onClick={handleCtaClick} className="btn-primary" style={{ flex: 1, textAlign: "center", fontSize: "0.875rem" }}>
+            <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <Link 
+                href="/panel/login" 
+                onClick={() => setMobileNav(false)} 
+                style={{ 
+                  textAlign: "center", 
+                  padding: "0.75rem",
+                  fontSize: "1rem", 
+                  fontWeight: 600,
+                  color: "#4f46e5",
+                  border: "1px solid rgba(99,102,241,0.2)",
+                  borderRadius: "var(--radius-lg)",
+                  textDecoration: "none"
+                }}
+              >
+                Log in
+              </Link>
+              <Link 
+                href="/panel/register" 
+                onClick={() => setMobileNav(false)} 
+                className="btn-primary" 
+                style={{ textAlign: "center", padding: "0.75rem", fontSize: "1rem" }}
+              >
                 Get Started
               </Link>
             </div>
