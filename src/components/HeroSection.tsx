@@ -4,6 +4,13 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Icons } from "@/components/Icons";
 
+/* ─── Client-mount guard to avoid SSR/hydration mismatch ─── */
+function useIsMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  return mounted;
+}
+
 /* ─── Typewriter Hook ─── */
 export function useTypewriter(words: string[], speed = 80, pause = 2200, deleteSpeed = 40) {
   const [text, setText] = useState("");
@@ -138,6 +145,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
   }, []);
   const resetTilt = useCallback(() => setTilt({ x: 0, y: 0 }), []);
 
+  const isMounted = useIsMounted();
   const currentToast = TOASTS[activeToast];
 
   return (
@@ -542,20 +550,22 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
               {/* Dashboard content area */}
               <div style={{ position: "relative", aspectRatio: "16/9", overflow: "hidden", background: "#000" }}>
-                <iframe
-                  src="https://www.youtube.com/embed/vEWPumKysk8?autoplay=1&loop=1&playlist=vEWPumKysk8&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1"
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    border: "none",
-                    pointerEvents: "none",
-                  }}
-                />
+                {isMounted && (
+                  <iframe
+                    src="https://www.youtube.com/embed/vEWPumKysk8?autoplay=1&loop=1&playlist=vEWPumKysk8&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: "100%",
+                      border: "none",
+                      pointerEvents: "none",
+                    }}
+                  />
+                )}
 
                 {/* Gradient overlay */}
                 <div
