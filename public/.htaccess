@@ -1,0 +1,29 @@
+# LiteSpeed Cache Rules for Next.js on Hostinger
+# Prevents stale HTML from breaking chunk hash references after redeploys
+
+<IfModule LiteSpeed>
+  # Disable caching of HTML pages — chunks change on every build
+  CacheDisable public /
+  RewriteEngine On
+  RewriteRule .* - [E=Cache-Control:no-cache]
+</IfModule>
+
+# Standard cache headers fallback
+<IfModule mod_headers.c>
+  # Never cache HTML — guarantees fresh chunk references
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # Never cache the root document
+  <FilesMatch "^$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+  </FilesMatch>
+
+  # Static chunks are content-hashed — safe to cache forever
+  <FilesMatch "\.(js|css|woff|woff2|ttf|otf|eot|svg|png|jpg|jpeg|gif|ico|webp)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
