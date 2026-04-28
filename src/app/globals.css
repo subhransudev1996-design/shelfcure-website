@@ -358,16 +358,25 @@ p {
 }
 
 /* ---------- Section Wrapper ---------- */
-.section-container {
+.section-container,
+.container {
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 2rem;
 }
 
+@media (max-width: 1024px) {
+  .section-container,
+  .container {
+    padding: 0 1.5rem;
+  }
+}
+
 @media (max-width: 768px) {
-  .section-container {
-    padding: 0 1.25rem;
+  .section-container,
+  .container {
+    padding: 0 1rem;
   }
   .text-display-lg {
     font-size: 2.25rem;
@@ -384,11 +393,96 @@ p {
 }
 
 @media (max-width: 480px) {
+  .section-container,
+  .container {
+    padding: 0 1rem;
+  }
   .text-display-lg {
     font-size: 1.875rem;
   }
   .text-display-md {
     font-size: 1.625rem;
+  }
+}
+
+/* ---------- Mobile Responsive Grid Utilities ---------- */
+/* Used by homepage sections that hardcode grid layouts */
+@media (max-width: 640px) {
+  /* Impact stats: 3-col → 1-col */
+  .stats-impact-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Feature bento hero card inner grid: 2-col → 1-col */
+  .features-bento > div:first-child {
+    grid-template-columns: 1fr !important;
+    min-height: auto !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Integration diagram hidden on mobile */
+  .integration-orbit-diagram {
+    display: none !important;
+  }
+  /* Mobile: sections with large padding scaled down */
+  .section-padded-lg {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+  /* AI features grid: 2-col → 1-col */
+  .ai-features-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Features bento: 2-col → 1-col */
+  .features-bento {
+    grid-template-columns: 1fr !important;
+  }
+  .features-bento > div:first-child {
+    grid-column: 1 !important;
+    grid-template-columns: 1fr !important;
+    min-height: auto !important;
+  }
+}
+
+/* ---------- Homepage: Bento & Why Section Mobile ---------- */
+@media (max-width: 480px) {
+  .bento-content {
+    padding: 1.5rem !important;
+  }
+  .stat-glass {
+    padding: 1.75rem 1.25rem !important;
+  }
+  .stat-value {
+    font-size: 2.25rem !important;
+  }
+}
+
+/* ---------- Pricing / Steps section mobile ---------- */
+@media (max-width: 640px) {
+  /* Getting started steps: horizontal flow → vertical */
+  .steps-grid {
+    flex-direction: column !important;
+  }
+}
+
+/* ---------- Mobile typography overrides ---------- */
+@media (max-width: 480px) {
+  /* .text-display-md (2.75rem) → readable on narrow phones */
+  .text-display-md {
+    font-size: 1.75rem !important;
+    line-height: 1.2 !important;
+  }
+  /* .text-body-lg (1.125rem) → compact on phones */
+  .text-body-lg {
+    font-size: 1rem !important;
+    line-height: 1.65 !important;
+  }
+  /* Remove forced <br/> orphan on integration heading */
+  .integration-heading br {
+    display: none;
   }
 }
 

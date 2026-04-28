@@ -76,11 +76,32 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         return;
       }
 
+      // If the user just registered, pull their form data from localStorage so
+      // we can pass real values to the RPC (and patch the pharmacy row after).
+      let pending: {
+        email?: string; fullName?: string; pharmacyName?: string; phone?: string;
+        address?: string; city?: string; state?: string; pincode?: string;
+        licenseNumber?: string; gstin?: string;
+      } | null = null;
+      try {
+        const raw = localStorage.getItem('shelfcure-pending-pharmacy');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.email && authUser.email && parsed.email.toLowerCase() === authUser.email.toLowerCase()) {
+            pending = parsed;
+          }
+        }
+      } catch {}
+
+      const fullNameForSetup = pending?.fullName || authUser.user_metadata?.full_name || authUser.email || 'User';
+      const pharmacyNameForSetup = pending?.pharmacyName
+        || ((authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'My') + "'s Pharmacy");
+
       // Use our secure RPC to guarantee atomic creation of pharmacy and user record, bypassing client-side RLS issues.
       const { data: setupData, error: setupError } = await supabase.rpc('setup_new_user_pharmacy', {
-        p_full_name: authUser.user_metadata?.full_name || authUser.email || 'User',
+        p_full_name: fullNameForSetup,
         p_email: authUser.email || '',
-        p_pharmacy_name: (authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'My') + "'s Pharmacy"
+        p_pharmacy_name: pharmacyNameForSetup,
       });
 
       if (setupError || !setupData) {
@@ -88,6 +109,27 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         setLoading(false);
         setAuthChecked(true);
         return;
+      }
+
+      // Apply the rest of the registration form data to the pharmacy row.
+      // The RPC only sets name/owner_name, so phone/email/address/etc. would
+      // otherwise stay blank and Settings would look empty.
+      if (pending && setupData.pharmacy_id) {
+        const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        if (pending.phone) patch.phone = pending.phone;
+        if (authUser.email) patch.email = authUser.email;
+        if (pending.address) patch.address = pending.address;
+        if (pending.city) patch.city = pending.city;
+        if (pending.state) patch.state = pending.state;
+        if (pending.pincode) patch.pincode = pending.pincode;
+        if (pending.gstin) patch.gstin = pending.gstin.toUpperCase();
+        if (pending.licenseNumber) patch.license_number = pending.licenseNumber;
+        const { error: patchErr } = await supabase
+          .from('pharmacies')
+          .update(patch)
+          .eq('id', setupData.pharmacy_id);
+        if (patchErr) console.error('[PanelLayout] Failed to apply pending pharmacy fields:', patchErr);
+        try { localStorage.removeItem('shelfcure-pending-pharmacy'); } catch {}
       }
 
       setUser({

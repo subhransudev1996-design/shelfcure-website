@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { usePanelStore } from '@/store/panelStore';
@@ -17,13 +17,19 @@ interface ReturnRow {
   sale_id: string | null;
   return_date: string;
   refund_amount: number;
+  refund_method: string | null;
   reason: string | null;
   // joined from sales
   patient_name?: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
   bill_date?: string | null;
+  // aggregated from sale_return_items
+  items_count?: number;
+  units_count?: number;
 }
 
-type DatePreset = 'today' | 'yesterday' | 'week' | 'month' | 'all';
+type DatePreset = 'today' | 'yesterday' | 'week' | 'month' | 'custom' | 'all';
 
 /* ─── Palette ────────────────────────────────────────── */
 const C = {
@@ -111,11 +117,10 @@ export default function ReturnsPage() {
   const [searchFocus, setSearchFocus] = useState(false);
   const [preset, setPreset] = useState<DatePreset>('month');
 
-  // Custom date range (used when preset is overridden)
+  // Custom date range — only applies when preset === 'custom'
   const { from: mFrom, to: mTo } = monthRange(0);
   const [dateFrom, setDateFrom] = useState(mFrom);
   const [dateTo, setDateTo] = useState(mTo);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ─── Load ─── */
   const load = useCallback(async () => {
@@ -124,35 +129,61 @@ export default function ReturnsPage() {
     try {
       const { data, error } = await supabase
         .from('sale_returns')
-        .select('id, sale_id, return_date, refund_amount, reason, sales(patient_name, bill_date)')
+        .select('id, sale_id, return_date, refund_amount, refund_method, reason, sales(patient_name, bill_date, customers(name, phone))')
         .eq('pharmacy_id', pharmacyId)
         .order('return_date', { ascending: false })
         .limit(500);
 
       if (error) throw error;
 
-      // Supabase returns foreign-key joins as arrays
+      // Supabase returns foreign-key joins as arrays in some relation modes.
       type RawReturn = {
         id: string; sale_id: string | null; return_date: string;
-        refund_amount: number; reason: string | null;
+        refund_amount: number; refund_method: string | null; reason: string | null;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         sales: any;
       };
-      setReturns(
-        (data as RawReturn[] || []).map((r) => {
-          // sales may come back as array or object depending on relation type
-          const sale = Array.isArray(r.sales) ? r.sales[0] : r.sales;
-          return {
-            id: r.id,
-            sale_id: r.sale_id,
-            return_date: r.return_date,
-            refund_amount: r.refund_amount,
-            reason: r.reason,
-            patient_name: sale?.patient_name ?? null,
-            bill_date: sale?.bill_date ?? null,
-          };
-        })
-      );
+      const rows = (data as RawReturn[] || []).map((r) => {
+        const sale = Array.isArray(r.sales) ? r.sales[0] : r.sales;
+        const cust = sale ? (Array.isArray(sale.customers) ? sale.customers[0] : sale.customers) : null;
+        return {
+          id: r.id,
+          sale_id: r.sale_id,
+          return_date: r.return_date,
+          refund_amount: r.refund_amount,
+          refund_method: r.refund_method,
+          reason: r.reason,
+          patient_name: sale?.patient_name ?? null,
+          customer_name: cust?.name ?? null,
+          customer_phone: cust?.phone ?? null,
+          bill_date: sale?.bill_date ?? null,
+          items_count: 0,
+          units_count: 0,
+        } as ReturnRow;
+      });
+
+      // Pull return-item counts for these returns in one batch query.
+      const returnIds = rows.map(r => r.id);
+      if (returnIds.length > 0) {
+        const { data: itemRows } = await supabase
+          .from('sale_return_items')
+          .select('sale_return_id, quantity')
+          .in('sale_return_id', returnIds);
+        const itemAgg: Record<string, { items: number; units: number }> = {};
+        for (const it of itemRows || []) {
+          const id = (it as any).sale_return_id as string;
+          const qty = Number((it as any).quantity) || 0;
+          if (!itemAgg[id]) itemAgg[id] = { items: 0, units: 0 };
+          itemAgg[id].items += 1;
+          itemAgg[id].units += qty;
+        }
+        for (const r of rows) {
+          const a = itemAgg[r.id];
+          if (a) { r.items_count = a.items; r.units_count = a.units; }
+        }
+      }
+
+      setReturns(rows);
     } catch (err) {
       console.error(err);
     } finally {
@@ -167,31 +198,35 @@ export default function ReturnsPage() {
 
   /* ─── Client-side filter (date preset + search) ─── */
   const filtered = useMemo(() => {
+    const cFrom = preset === 'custom' ? new Date(`${dateFrom}T00:00:00`) : null;
+    const cTo = preset === 'custom' ? new Date(`${dateTo}T23:59:59.999`) : null;
     return returns.filter(r => {
       const d = new Date(r.return_date);
-      // Date filter
       const passDate = (() => {
         if (preset === 'today')     return isToday(d);
         if (preset === 'yesterday') return isYesterday(d);
         if (preset === 'week')      return isThisWeek(d);
         if (preset === 'month')     return isThisMonth(d);
+        if (preset === 'custom')    return cFrom && cTo ? d >= cFrom && d <= cTo : true;
         return true; // 'all'
       })();
       if (!passDate) return false;
-      // Search filter
       if (!search.trim()) return true;
       const q = search.toLowerCase();
       return (
+        (r.customer_name || '').toLowerCase().includes(q) ||
+        (r.customer_phone || '').toLowerCase().includes(q) ||
         (r.patient_name || '').toLowerCase().includes(q) ||
         (r.reason || '').toLowerCase().includes(q) ||
+        (r.refund_method || '').toLowerCase().includes(q) ||
         (r.sale_id || '').toLowerCase().includes(q)
       );
     });
-  }, [returns, preset, search]);
+  }, [returns, preset, search, dateFrom, dateTo]);
 
   /* ─── Derived stats from filtered ─── */
   const totalRefunds = filtered.reduce((s, r) => s + (r.refund_amount ?? 0), 0);
-  const uniquePatients = new Set(filtered.map(r => r.patient_name || 'Walk-in')).size;
+  const uniquePatients = new Set(filtered.map(r => r.customer_name || r.patient_name || 'Walk-in')).size;
 
   /* ─── Date presets ─── */
   const PRESETS: { key: DatePreset; label: string }[] = [
@@ -199,6 +234,7 @@ export default function ReturnsPage() {
     { key: 'yesterday', label: 'Yesterday' },
     { key: 'week',      label: 'This Week' },
     { key: 'month',     label: 'This Month' },
+    { key: 'custom',    label: 'Custom' },
     { key: 'all',       label: 'All Time' },
   ];
 
@@ -228,7 +264,7 @@ export default function ReturnsPage() {
             <RefreshCw style={{ width: 14, height: 14, animation: loading ? 'spin 1s linear infinite' : 'none' }} />
           </button>
           <button
-            onClick={() => router.push('/panel/pos')}
+            onClick={() => router.push('/panel/returns/process')}
             style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 12, border: 'none', background: `linear-gradient(135deg,${C.orange},#ea580c)`, color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 24px rgba(249,115,22,0.3)', transition: 'all 0.15s ease' }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(249,115,22,0.4)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(249,115,22,0.3)'; }}
@@ -284,6 +320,23 @@ export default function ReturnsPage() {
         </div>
       </div>
 
+      {/* Custom date range — only when 'Custom' preset is active */}
+      {preset === 'custom' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', backgroundColor: 'rgba(249,115,22,0.05)', border: `1px solid rgba(249,115,22,0.15)`, borderRadius: 12 }}>
+          <Calendar style={{ width: 14, height: 14, color: C.orange }} />
+          <span style={{ fontSize: 11, fontWeight: 700, color: C.orange, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Range</span>
+          <input
+            type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} max={dateTo}
+            style={{ padding: '7px 10px', backgroundColor: C.input, border: `1px solid ${C.inputBorder}`, borderRadius: 8, color: C.text, fontSize: 12, fontFamily: 'inherit', colorScheme: 'dark' }}
+          />
+          <span style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>to</span>
+          <input
+            type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} min={dateFrom}
+            style={{ padding: '7px 10px', backgroundColor: C.input, border: `1px solid ${C.inputBorder}`, borderRadius: 8, color: C.text, fontSize: 12, fontFamily: 'inherit', colorScheme: 'dark' }}
+          />
+        </div>
+      )}
+
       {/* ── Content ── */}
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 0', gap: 14 }}>
@@ -324,15 +377,19 @@ export default function ReturnsPage() {
           </div>
 
           {/* Return cards */}
-          {filtered.map((ret, idx) => {
+          {filtered.map((ret) => {
             const reasonColor = getReasonColor(ret.reason);
+            const refundCfg = getRefundConfig(ret.refund_method || '');
+            const RefundIcon = refundCfg.icon;
+            const displayName = ret.customer_name || ret.patient_name || 'Walk-in Customer';
             return (
               <div
                 key={ret.id}
+                onClick={() => ret.sale_id && router.push(`/panel/sales/${ret.sale_id}`)}
                 style={{
                   backgroundColor: C.card, border: `1px solid ${C.cardBorder}`, borderRadius: 16,
                   padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16,
-                  cursor: 'default', transition: 'all 0.15s ease', position: 'relative', overflow: 'hidden',
+                  cursor: ret.sale_id ? 'pointer' : 'default', transition: 'all 0.15s ease', position: 'relative', overflow: 'hidden',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.2)'; e.currentTarget.style.backgroundColor = '#0d1225'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.25)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = C.cardBorder; e.currentTarget.style.backgroundColor = C.card; e.currentTarget.style.boxShadow = 'none'; }}
@@ -347,22 +404,55 @@ export default function ReturnsPage() {
 
                 {/* Main info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
                     <span style={{ fontSize: 14, fontWeight: 800, color: C.text }}>
-                      {ret.patient_name || 'Walk-in Patient'}
+                      {displayName}
                     </span>
+                    {ret.customer_phone && (
+                      <span style={{ fontSize: 10, color: C.muted, fontWeight: 600 }}>
+                        {ret.customer_phone}
+                      </span>
+                    )}
                     {ret.sale_id && (
                       <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.05)', color: C.muted, fontWeight: 700, border: `1px solid ${C.cardBorder}` }}>
-                        Sale #{ret.sale_id.slice(-6)}
+                        Bill #{ret.sale_id.slice(0, 8).toUpperCase()}
                       </span>
                     )}
                   </div>
+
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    {/* Returned on */}
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: C.muted }}>
                       <Calendar style={{ width: 11, height: 11 }} />
-                      {formatDate(ret.return_date)}
+                      <span style={{ fontWeight: 700, color: C.text }}>Returned:</span> {formatDate(ret.return_date)}
+                      <span style={{ color: C.muted }}>· {formatRelativeTime(ret.return_date)}</span>
                     </span>
-                    <span style={{ fontSize: 10, color: C.muted }}>{formatRelativeTime(ret.return_date)}</span>
+
+                    {/* Original bill date */}
+                    {ret.bill_date && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: C.muted }}>
+                        <Receipt style={{ width: 11, height: 11 }} />
+                        <span style={{ fontWeight: 700, color: '#94a3b8' }}>Bill:</span> {formatDate(ret.bill_date)}
+                      </span>
+                    )}
+
+                    {/* Items */}
+                    {(ret.items_count ?? 0) > 0 && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: C.muted }}>
+                        <Package2 style={{ width: 11, height: 11 }} />
+                        {ret.items_count} item{ret.items_count !== 1 ? 's' : ''} · {ret.units_count} unit{ret.units_count !== 1 ? 's' : ''}
+                      </span>
+                    )}
+
+                    {/* Refund method */}
+                    {ret.refund_method && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '2px 8px', borderRadius: 20, backgroundColor: `${refundCfg.color}14`, color: refundCfg.color, fontWeight: 800, border: `1px solid ${refundCfg.color}26`, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <RefundIcon style={{ width: 10, height: 10 }} />
+                        {ret.refund_method}
+                      </span>
+                    )}
+
+                    {/* Reason */}
                     {ret.reason && (
                       <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, backgroundColor: `${reasonColor}12`, color: reasonColor, fontWeight: 700, border: `1px solid ${reasonColor}20` }}>
                         {ret.reason}

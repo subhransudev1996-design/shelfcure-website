@@ -98,7 +98,7 @@ export default function BlogPostContent({ slug }: { slug: string }) {
       </section>
 
       {/* ───────────────────── FEATURED IMAGE & CONTENT ───────────────────── */}
-      <section style={{ padding: "0 0 8rem 0", position: "relative" }}>
+      <section style={{ padding: "0 0 4rem 0", position: "relative" }}>
          <div className="section-container" style={{ maxWidth: "1100px", marginTop: "-8rem", position: "relative", zIndex: 20 }}>
             {/* Featured Image */}
             <div className="animate-fade-in-up delay-200" style={{ 

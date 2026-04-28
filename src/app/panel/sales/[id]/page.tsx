@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { usePanelStore } from '@/store/panelStore';
 import { formatCurrency } from '@/lib/utils/format';
@@ -9,6 +9,7 @@ import {
   ArrowLeft, Printer, Loader2, Receipt, User,
   CreditCard, Banknote, Smartphone, IndianRupee, Package,
   AlertTriangle, CheckCircle2, RotateCcw, X, Minus, Plus,
+  Wallet, AlertCircle, Save,
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -18,14 +19,27 @@ interface Sale {
   patient_name: string | null;
   doctor_name: string | null;
   customer_id: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
   bill_date: string;
   total_amount: number;
   discount_amount: number | null;
   gst_amount: number | null;
   net_amount: number | null;
   payment_mode: string | null;
+  payment_status: string | null;
+  paid_amount: number | null;
   status: string;
   created_at: string;
+}
+
+interface PaymentEntry {
+  id: string;
+  amount: number;
+  payment_method: string | null;
+  notes: string | null;
+  created_at: string;
+  balance_after: number | null;
 }
 
 interface SaleItem {
@@ -95,8 +109,6 @@ function ReturnModal({
   const [refundMethod, setRefundMethod] = useState<string>('cash');
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-  const [finalRefund, setFinalRefund] = useState(0);
 
   function maxReturnable(item: SaleItem) {
     return Math.max(0, item.quantity - item.already_returned);
@@ -152,6 +164,7 @@ function ReturnModal({
           pharmacy_id: pharmacyId,
           sale_id: sale.id,
           refund_amount: totals.totalRefund,
+          refund_method: refundMethod,
           reason: reason.trim() || null,
           return_date: new Date().toISOString(),
         })
@@ -200,9 +213,9 @@ function ReturnModal({
         }
       }
 
-      setFinalRefund(totals.totalRefund);
-      setDone(true);
+      toast.success(`Return processed · Refund ${formatCurrency(totals.totalRefund)}`);
       onSuccess();
+      onClose();
     } catch (err: any) {
       toast.error(err?.message || 'Failed to process return');
     } finally {
@@ -216,27 +229,6 @@ function ReturnModal({
     { key: 'card', label: 'Card', Icon: CreditCard },
     { key: 'credit', label: 'Credit', Icon: IndianRupee },
   ];
-
-  /* ── Success screen ── */
-  if (done) return (
-    <div style={overlay}>
-      <div style={{ ...modalBox, maxWidth: 440, textAlign: 'center', padding: '48px 32px' }}>
-        <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(16,185,129,0.12)', border: '2px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-          <CheckCircle2 style={{ width: 36, height: 36, color: C.emerald }} />
-        </div>
-        <h2 style={{ margin: '0 0 8px', fontSize: 24, fontWeight: 900, color: C.text }}>Return Processed</h2>
-        <p style={{ margin: '0 0 8px', fontSize: 14, color: C.muted }}>Refund of</p>
-        <p style={{ margin: '0 0 28px', fontSize: 32, fontWeight: 900, color: C.emerald }}>{formatCurrency(finalRefund)}</p>
-        <p style={{ margin: '0 0 28px', fontSize: 12, color: C.muted }}>via <strong style={{ color: C.subtle, textTransform: 'capitalize' }}>{refundMethod}</strong> · Stock restored</p>
-        <button
-          onClick={onClose}
-          style={{ width: '100%', padding: '12px', borderRadius: 12, background: C.indigo, border: 'none', color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}
-        >
-          Done
-        </button>
-      </div>
-    </div>
-  );
 
   /* ── Main return modal ── */
   return (
@@ -257,6 +249,46 @@ function ReturnModal({
           <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: 'none', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <X style={{ width: 16, height: 16 }} />
           </button>
+        </div>
+
+        {/* Original bill summary — so the user knows what the sale was worth */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 24px', borderBottom: `1px solid ${C.cardBorder}`, background: 'rgba(99,102,241,0.05)', flexShrink: 0, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <div>
+              <p style={{ margin: 0, fontSize: 9, fontWeight: 800, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Bill Total</p>
+              <p style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 900, color: C.indigoLight, lineHeight: 1, letterSpacing: '-0.02em' }}>
+                {formatCurrency(sale.net_amount ?? sale.total_amount)}
+              </p>
+            </div>
+            {(sale.discount_amount ?? 0) > 0 && (
+              <div>
+                <p style={{ margin: 0, fontSize: 9, fontWeight: 800, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Discount</p>
+                <p style={{ margin: '2px 0 0', fontSize: 13, fontWeight: 800, color: C.rose, lineHeight: 1 }}>
+                  −{formatCurrency(sale.discount_amount ?? 0)}
+                </p>
+              </div>
+            )}
+            {(sale.gst_amount ?? 0) > 0 && (
+              <div>
+                <p style={{ margin: 0, fontSize: 9, fontWeight: 800, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>GST</p>
+                <p style={{ margin: '2px 0 0', fontSize: 13, fontWeight: 800, color: C.subtle, lineHeight: 1 }}>
+                  {formatCurrency(sale.gst_amount ?? 0)}
+                </p>
+              </div>
+            )}
+            <div>
+              <p style={{ margin: 0, fontSize: 9, fontWeight: 800, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Items</p>
+              <p style={{ margin: '2px 0 0', fontSize: 13, fontWeight: 800, color: C.subtle, lineHeight: 1 }}>
+                {items.length}
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, background: 'rgba(99,102,241,0.1)', border: `1px solid rgba(99,102,241,0.2)` }}>
+            <Receipt style={{ width: 12, height: 12, color: C.indigoLight }} />
+            <span style={{ fontSize: 11, fontWeight: 800, color: C.indigoLight }}>
+              #{sale.id.slice(0, 8).toUpperCase()}
+            </span>
+          </div>
         </div>
 
         {/* Body: items left, summary right */}
@@ -448,15 +480,25 @@ const modalBox: React.CSSProperties = {
 export default function SaleDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const pharmacyId = usePanelStore((s) => s.pharmacyId);
   const pharmacyName = usePanelStore((s) => s.pharmacyName);
 
   const [sale, setSale] = useState<Sale | null>(null);
   const [items, setItems] = useState<SaleItem[]>([]);
+  const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showReturn, setShowReturn] = useState(false);
+
+  // Pay credit modal state
+  const [showPay, setShowPay] = useState(false);
+  const [payAmount, setPayAmount] = useState('');
+  const [payMethod, setPayMethod] = useState('cash');
+  const [payNote, setPayNote] = useState('');
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
   const saleId = params.id as string;
 
@@ -468,18 +510,26 @@ export default function SaleDetailPage() {
       const [saleRes, itemsRes] = await Promise.all([
         supabase
           .from('sales')
-          .select('id, patient_name, doctor_name, customer_id, bill_date, total_amount, discount_amount, gst_amount, net_amount, payment_mode, status, created_at')
+          .select('id, patient_name, doctor_name, customer_id, bill_date, total_amount, discount_amount, gst_amount, net_amount, payment_mode, payment_status, paid_amount, status, created_at, customers(name, phone)')
           .eq('id', saleId)
           .eq('pharmacy_id', pharmacyId)
           .single(),
         supabase
           .from('sale_items')
-          .select('id, medicine_id, batch_id, quantity, mrp, unit_price, gst_rate, total_amount, medicines(name), batches(batch_number)')
+          // Real schema columns: mrp (per-unit price), amount (line total),
+          // gst_percentage. The page UI uses unit_price/total_amount/gst_rate
+          // names — we map them at coercion time below.
+          .select('id, medicine_id, batch_id, quantity, mrp, amount, gst_percentage, discount_percentage, medicines(name), batches(batch_number)')
           .eq('sale_id', saleId),
       ]);
 
       if (saleRes.error) throw saleRes.error;
-      setSale(saleRes.data);
+      const sd: any = saleRes.data;
+      setSale({
+        ...sd,
+        customer_name: sd?.customers?.name ?? null,
+        customer_phone: sd?.customers?.phone ?? null,
+      });
 
       // Step 1: get return IDs for this sale
       const { data: saleReturnRows } = await supabase
@@ -505,13 +555,56 @@ export default function SaleDetailPage() {
         returnedMap[ri.sale_item_id] = (returnedMap[ri.sale_item_id] ?? 0) + ri.quantity;
       }
 
+      // Load credit payments tied to this bill (customer_ledger rows we
+      // wrote in handlePayCredit / customer detail per-bill payment).
+      if (sd?.customer_id) {
+        const { data: payRows } = await supabase
+          .from('customer_ledger')
+          .select('id, amount, payment_method, notes, created_at, balance_after, transaction_type, reference_type, reference_id')
+          .eq('pharmacy_id', pharmacyId)
+          .eq('customer_id', sd.customer_id)
+          .eq('reference_type', 'sale')
+          .eq('reference_id', saleId)
+          .eq('transaction_type', 'payment')
+          .order('created_at', { ascending: true });
+        setPayments(
+          (payRows || []).map((p: any) => ({
+            id: p.id,
+            amount: Number(p.amount) || 0,
+            payment_method: p.payment_method ?? null,
+            notes: p.notes ?? null,
+            created_at: p.created_at,
+            balance_after: p.balance_after != null ? Number(p.balance_after) : null,
+          }))
+        );
+      } else {
+        setPayments([]);
+      }
+
       setItems(
-        (itemsRes.data || []).map((item: any) => ({
-          ...item,
-          medicine_name: item.medicines?.name || 'Unknown Medicine',
-          batch_number: item.batches?.batch_number || '—',
-          already_returned: returnedMap[item.id] ?? 0,
-        }))
+        (itemsRes.data || []).map((item: any) => {
+          // Map real DB columns (mrp, amount, gst_percentage) onto the
+          // page's UI fields (unit_price, total_amount, gst_rate).
+          const qty = Number(item.quantity) || 0;
+          const mrp = Number(item.mrp) || 0;
+          const amount = Number(item.amount) || 0;
+          // unit_price = effective per-unit price actually charged. Prefer
+          // amount/qty (true rate after discount), fall back to mrp.
+          const unitPrice = qty > 0 && amount > 0 ? +(amount / qty).toFixed(2) : mrp;
+          // total_amount = line total. Use amount; fall back to mrp*qty.
+          const totalAmount = amount > 0 ? amount : +(mrp * qty).toFixed(2);
+          return {
+            ...item,
+            quantity: qty,
+            mrp,
+            unit_price: unitPrice,
+            gst_rate: Number(item.gst_percentage) || 0,
+            total_amount: totalAmount,
+            medicine_name: item.medicines?.name || 'Unknown Medicine',
+            batch_number: item.batches?.batch_number || '—',
+            already_returned: returnedMap[item.id] ?? 0,
+          };
+        })
       );
     } catch (err: any) {
       setError(err?.message || 'Failed to load sale details');
@@ -521,6 +614,76 @@ export default function SaleDetailPage() {
   }, [pharmacyId, saleId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Auto-open the return modal when arriving with ?action=return — used by
+  // the standalone Process Return flow which routes here after looking up
+  // the sale by bill number.
+  useEffect(() => {
+    if (loading || !sale || items.length === 0) return;
+    if (searchParams?.get('action') === 'return') setShowReturn(true);
+  }, [loading, sale, items.length, searchParams]);
+
+  /* ─── Pay credit on this bill ─── */
+  async function handlePayCredit() {
+    if (!sale || !pharmacyId) return;
+    const due = Math.max(0, (sale.net_amount ?? sale.total_amount) - Number(sale.paid_amount ?? 0));
+    const amt = Number(payAmount);
+    if (!amt || amt <= 0) { setPayError('Enter a valid amount'); return; }
+    if (amt > due + 0.01) { setPayError(`Amount exceeds credit due (${formatCurrency(due)})`); return; }
+    setPaying(true); setPayError(null);
+    try {
+      const newPaid = +(Number(sale.paid_amount ?? 0) + amt).toFixed(2);
+      const newDue = +(due - amt).toFixed(2);
+      const newStatus = newDue <= 0.01 ? 'paid' : 'partial';
+
+      // 1. Update sales row
+      const { error: sErr } = await supabase
+        .from('sales')
+        .update({ paid_amount: newPaid, payment_status: newStatus })
+        .eq('id', sale.id)
+        .eq('pharmacy_id', pharmacyId);
+      if (sErr) throw sErr;
+
+      // 2. If the sale is linked to a customer, decrement their outstanding
+      //    balance and write a customer_ledger entry so the payment shows in
+      //    their ledger and on the customer detail page.
+      if (sale.customer_id) {
+        const { data: cust } = await supabase
+          .from('customers')
+          .select('outstanding_balance')
+          .eq('id', sale.customer_id)
+          .eq('pharmacy_id', pharmacyId)
+          .maybeSingle();
+        const currentOut = Number(cust?.outstanding_balance ?? 0);
+        const nextOut = Math.max(0, +(currentOut - amt).toFixed(2));
+
+        await supabase.from('customer_ledger').insert({
+          pharmacy_id: pharmacyId,
+          customer_id: sale.customer_id,
+          transaction_type: 'payment',
+          amount: amt,
+          balance_after: nextOut,
+          payment_method: payMethod,
+          notes: payNote.trim() ? `Bill payment · ${payNote.trim()}` : `Payment for bill #${sale.id}`,
+          reference_type: 'sale',
+          reference_id: sale.id,
+        });
+        await supabase
+          .from('customers')
+          .update({ outstanding_balance: nextOut })
+          .eq('id', sale.customer_id)
+          .eq('pharmacy_id', pharmacyId);
+      }
+
+      toast.success(newDue <= 0.01 ? 'Bill fully paid' : `${formatCurrency(amt)} recorded`);
+      setShowPay(false); setPayAmount(''); setPayNote(''); setPayMethod('cash');
+      await load();
+    } catch (e: any) {
+      setPayError(e?.message || 'Failed to record payment');
+    } finally {
+      setPaying(false);
+    }
+  }
 
   /* ─── Loading ── */
   if (loading) return (
@@ -546,7 +709,12 @@ export default function SaleDetailPage() {
   const discount = sale.discount_amount ?? 0;
   const netPayable = sale.net_amount ?? sale.total_amount;
   const discountPct = subtotal > 0 ? ((discount / subtotal) * 100).toFixed(1) : '0';
-  const isCredit = (sale.payment_mode || '').toLowerCase() === 'credit';
+  const status = (sale.payment_status || '').toLowerCase();
+  const paid = Math.max(0, Number(sale.paid_amount ?? 0));
+  const credit = Math.max(0, +(netPayable - paid).toFixed(2));
+  const isPartial = status === 'partial' || (paid > 0 && credit > 0);
+  const isCredit = !isPartial && ((sale.payment_mode || '').toLowerCase() === 'credit' || status === 'unpaid' || status === 'credit' || (paid <= 0 && netPayable > 0));
+  const isPaid = !isPartial && !isCredit;
   const pColor = paymentColor(sale.payment_mode);
   const isFullyReturned = items.length > 0 && items.every((i) => i.already_returned >= i.quantity);
   const hasAnyReturn = items.some((i) => i.already_returned > 0);
@@ -569,15 +737,25 @@ export default function SaleDetailPage() {
       @media print{body{margin:10px}}
     </style></head><body>
       <div class="hdr"><h1>${pharmacyName || 'ShelfCure Pharmacy'}</h1><h2>Tax Invoice</h2></div>
-      <div class="row"><span><b>Date:</b> ${fmtDate(sale.bill_date)}</span><span><b>Patient:</b> ${sale.patient_name || 'Walk-in'}</span></div>
+      <div class="row"><span><b>Date:</b> ${fmtDate(sale.bill_date)}</span><span><b>${sale.customer_name ? 'Customer' : 'Patient'}:</b> ${sale.customer_name || sale.patient_name || 'Walk-in'}${sale.customer_phone ? ` (${sale.customer_phone})` : ''}</span></div>
       <div class="row"><span><b>Doctor:</b> ${sale.doctor_name || '—'}</span><span><b>Payment:</b> ${sale.payment_mode || '—'}</span></div>
       <table><thead><tr><th>#</th><th>Medicine</th><th>Batch</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">GST%</th><th class="r">Amount</th></tr></thead>
-      <tbody>${items.map((item, i) => `<tr><td>${i + 1}</td><td>${item.medicine_name}</td><td>${item.batch_number}</td><td class="r">${item.quantity}</td><td class="r">₹${item.unit_price.toFixed(2)}</td><td class="r">${item.gst_rate}%</td><td class="r">₹${item.total_amount.toFixed(2)}</td></tr>`).join('')}</tbody></table>
+      <tbody>${items.map((item, i) => {
+        const qty = Number(item.quantity) || 0;
+        const rate = Number(item.unit_price) || 0;
+        const amt = Number(item.total_amount) || 0;
+        const gstR = Number(item.gst_rate) || 0;
+        return `<tr><td>${i + 1}</td><td>${item.medicine_name ?? '—'}</td><td>${item.batch_number ?? '—'}</td><td class="r">${qty}</td><td class="r">₹${rate.toFixed(2)}</td><td class="r">${gstR}%</td><td class="r">₹${amt.toFixed(2)}</td></tr>`;
+      }).join('')}</tbody></table>
       <div class="tot">
         <div class="tr"><span>Subtotal</span><span>₹${subtotal.toFixed(2)}</span></div>
         ${gst > 0 ? `<div class="tr"><span>GST</span><span>₹${gst.toFixed(2)}</span></div>` : ''}
         ${discount > 0 ? `<div class="tr"><span>Discount (${discountPct}%)</span><span>-₹${discount.toFixed(2)}</span></div>` : ''}
         <div class="tr grand"><span>Net Payable</span><span>₹${netPayable.toFixed(2)}</span></div>
+        ${(isPartial || credit > 0.01) ? `
+          <div class="tr"><span>Paid</span><span>₹${paid.toFixed(2)}</span></div>
+          <div class="tr"><span><b>Credit Due</b></span><span><b>₹${credit.toFixed(2)}</b></span></div>
+        ` : ''}
       </div>
       <p style="text-align:center;margin-top:20px;font-size:11px;color:#777">Thank you for your visit! • Get well soon.</p>
     </body></html>`);
@@ -598,6 +776,89 @@ export default function SaleDetailPage() {
           onClose={() => setShowReturn(false)}
           onSuccess={() => load()}
         />
+      )}
+
+      {showPay && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div onClick={() => { setShowPay(false); setPayError(null); }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }} />
+          <div style={{ position: 'relative', width: '100%', maxWidth: 460, background: C.card, border: `1px solid ${C.cardBorder}`, borderRadius: 18, padding: 22, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Wallet style={{ width: 16, height: 16, color: C.emerald }} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 14, fontWeight: 900, color: C.text }}>Pay Credit on This Bill</h3>
+                  <p style={{ margin: '2px 0 0', fontSize: 11, color: C.muted }}>{sale.customer_name || sale.patient_name || 'Walk-in'} · Due {formatCurrency(credit)}</p>
+                </div>
+              </div>
+              <button onClick={() => { setShowPay(false); setPayError(null); }}
+                style={{ width: 30, height: 30, borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.05)', color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X style={{ width: 14, height: 14 }} />
+              </button>
+            </div>
+
+            {payError && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10, background: 'rgba(244,63,94,0.1)', border: `1px solid rgba(244,63,94,0.25)`, color: C.rose, fontSize: 12, marginBottom: 12 }}>
+                <AlertCircle style={{ width: 14, height: 14, flexShrink: 0 }} />
+                <span>{payError}</span>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 9, fontWeight: 900, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>
+                  Amount (₹) — Max: {formatCurrency(credit)}
+                </label>
+                <input
+                  type="number" min="1" max={credit} step="0.01" autoFocus
+                  value={payAmount} onChange={(e) => setPayAmount(e.target.value)}
+                  style={{ width: '100%', padding: '11px 14px', fontSize: 18, fontWeight: 900, color: C.text, background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.cardBorder}`, borderRadius: 10, outline: 'none', boxSizing: 'border-box' }}
+                />
+                <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                  <button type="button" onClick={() => setPayAmount(credit.toFixed(2))}
+                    style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, color: C.emerald, background: 'rgba(16,185,129,0.1)', border: `1px solid rgba(16,185,129,0.2)`, borderRadius: 6, cursor: 'pointer' }}>
+                    Full ({formatCurrency(credit)})
+                  </button>
+                  <button type="button" onClick={() => setPayAmount((credit / 2).toFixed(2))}
+                    style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, color: C.indigoLight, background: 'rgba(99,102,241,0.1)', border: `1px solid rgba(99,102,241,0.2)`, borderRadius: 6, cursor: 'pointer' }}>
+                    Half
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 9, fontWeight: 900, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Payment Method</label>
+                <select value={payMethod} onChange={(e) => setPayMethod(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', fontSize: 13, color: C.text, background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.cardBorder}`, borderRadius: 10, outline: 'none', cursor: 'pointer', boxSizing: 'border-box', colorScheme: 'dark' }}>
+                  {['cash', 'upi', 'card', 'bank_transfer', 'cheque'].map((m) => (
+                    <option key={m} value={m} style={{ background: '#0B1121', color: C.text }}>
+                      {m.replace('_', ' ').toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 9, fontWeight: 900, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Notes (optional)</label>
+                <input value={payNote} onChange={(e) => setPayNote(e.target.value)} placeholder="Reference, voucher no…"
+                  style={{ width: '100%', padding: '10px 12px', fontSize: 13, color: C.text, background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.cardBorder}`, borderRadius: 10, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button onClick={() => { setShowPay(false); setPayError(null); }}
+                style={{ flex: 1, padding: 11, borderRadius: 10, border: `1px solid ${C.cardBorder}`, background: 'transparent', color: C.muted, fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={handlePayCredit} disabled={paying}
+                style={{ flex: 1, padding: 11, borderRadius: 10, border: 'none', background: C.emerald, color: '#fff', fontSize: 12, fontWeight: 800, cursor: paying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: paying ? 0.7 : 1 }}>
+                {paying ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <IndianRupee style={{ width: 14, height: 14 }} />}
+                Confirm Payment
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div style={{ padding: '0 0 48px', animation: 'fadeIn 0.3s ease' }}>
@@ -654,6 +915,20 @@ export default function SaleDetailPage() {
               {isFullyReturned ? 'Fully Returned' : 'Process Return'}
             </button>
 
+            {/* Pay Credit button — only when there's outstanding credit on this bill */}
+            {credit > 0.01 && (
+              <button
+                onClick={() => { setPayAmount(credit.toFixed(2)); setPayError(null); setShowPay(true); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 12, background: 'rgba(16,185,129,0.12)', border: `1px solid rgba(16,185,129,0.3)`, color: C.emerald, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.12)'; }}
+                title={`Pay ${formatCurrency(credit)} credit due on this bill`}
+              >
+                <Wallet style={{ width: 15, height: 15 }} />
+                Pay Credit · {formatCurrency(credit)}
+              </button>
+            )}
+
             {/* Print button */}
             <button
               onClick={handlePrint}
@@ -688,23 +963,33 @@ export default function SaleDetailPage() {
               <p style={{ margin: '4px 0 0', fontSize: 11, color: C.muted }}>{fmtDate(sale.bill_date)}</p>
             </div>
 
-            {/* Patient card */}
+            {/* Customer card */}
             <div style={{ background: C.card, border: `1px solid ${C.cardBorder}`, borderRadius: 16, padding: '16px 18px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <User style={{ width: 13, height: 13, color: C.muted }} />
-                <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Patient</p>
+                <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {sale.customer_name ? 'Customer' : 'Patient'}
+                </p>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#6366f1,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 900, flexShrink: 0 }}>
-                  {(sale.patient_name || 'W')[0].toUpperCase()}
-                </div>
-                <div>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: C.text }}>{sale.patient_name || 'Walk-in Customer'}</p>
-                  {sale.doctor_name && (
-                    <p style={{ margin: '2px 0 0', fontSize: 11, color: C.muted }}>Dr. {sale.doctor_name}</p>
-                  )}
-                </div>
-              </div>
+              {(() => {
+                const displayName = sale.customer_name || sale.patient_name || 'Walk-in Customer';
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#6366f1,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 900, flexShrink: 0 }}>
+                      {displayName[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: C.text }}>{displayName}</p>
+                      {sale.customer_phone && (
+                        <p style={{ margin: '2px 0 0', fontSize: 11, color: C.muted }}>{sale.customer_phone}</p>
+                      )}
+                      {sale.doctor_name && (
+                        <p style={{ margin: '2px 0 0', fontSize: 11, color: C.muted }}>Dr. {sale.doctor_name}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Summary */}
@@ -736,17 +1021,117 @@ export default function SaleDetailPage() {
             </div>
 
             {/* Payment status */}
-            <div style={{ padding: '12px 16px', borderRadius: 14, background: isCredit ? 'rgba(245,158,11,0.08)' : 'rgba(16,185,129,0.08)', border: `1px solid ${isCredit ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)'}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-              {isCredit
-                ? <AlertTriangle style={{ width: 16, height: 16, color: C.amber, flexShrink: 0 }} />
-                : <CheckCircle2 style={{ width: 16, height: 16, color: C.emerald, flexShrink: 0 }} />}
-              <div>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: isCredit ? C.amber : C.emerald }}>
-                  {isCredit ? 'Payment Pending (Credit)' : 'Payment Successful'}
-                </p>
-                <p style={{ margin: '2px 0 0', fontSize: 10, color: C.muted }}>{sale.status}</p>
+            {(() => {
+              const accent = isPartial ? C.amber : isCredit ? C.rose : C.emerald;
+              const bg = isPartial ? 'rgba(245,158,11,0.08)' : isCredit ? 'rgba(244,63,94,0.08)' : 'rgba(16,185,129,0.08)';
+              const border = isPartial ? 'rgba(245,158,11,0.25)' : isCredit ? 'rgba(244,63,94,0.25)' : 'rgba(16,185,129,0.25)';
+              const Icon = isPartial ? AlertTriangle : isCredit ? AlertTriangle : CheckCircle2;
+              const heading = isPartial ? 'Partially Paid' : isCredit ? 'Payment Pending (Credit)' : 'Payment Successful';
+              const paidPct = netPayable > 0 ? Math.min(100, Math.round((paid / netPayable) * 100)) : (isPaid ? 100 : 0);
+              return (
+                <div style={{ padding: '14px 16px', borderRadius: 14, background: bg, border: `1px solid ${border}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Icon style={{ width: 16, height: 16, color: accent, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: accent }}>{heading}</p>
+                      <p style={{ margin: '2px 0 0', fontSize: 10, color: C.muted, textTransform: 'capitalize' }}>
+                        {sale.payment_status || sale.status}
+                      </p>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 900, color: accent, background: 'rgba(255,255,255,0.04)', padding: '3px 8px', borderRadius: 999, border: `1px solid ${border}` }}>
+                      {paidPct}% paid
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  {netPayable > 0 && (
+                    <div style={{ height: 6, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${paidPct}%`, background: accent, borderRadius: 999, transition: 'width 0.4s ease' }} />
+                    </div>
+                  )}
+
+                  {/* Paid / Credit breakdown — only show split when partial OR when there's any credit */}
+                  {(isPartial || credit > 0.01) && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      <div style={{ background: 'rgba(16,185,129,0.08)', border: `1px solid rgba(16,185,129,0.2)`, borderRadius: 10, padding: '8px 10px' }}>
+                        <p style={{ margin: 0, fontSize: 9, fontWeight: 800, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Paid</p>
+                        <p style={{ margin: '4px 0 0', fontSize: 14, fontWeight: 900, color: C.emerald, lineHeight: 1 }}>
+                          {formatCurrency(paid)}
+                        </p>
+                        {sale.payment_mode && paid > 0 && (
+                          <p style={{ margin: '3px 0 0', fontSize: 9, color: C.muted, textTransform: 'capitalize' }}>via {sale.payment_mode}</p>
+                        )}
+                      </div>
+                      <div style={{ background: 'rgba(244,63,94,0.08)', border: `1px solid rgba(244,63,94,0.2)`, borderRadius: 10, padding: '8px 10px' }}>
+                        <p style={{ margin: 0, fontSize: 9, fontWeight: 800, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Credit Due</p>
+                        <p style={{ margin: '4px 0 0', fontSize: 14, fontWeight: 900, color: C.rose, lineHeight: 1 }}>
+                          {formatCurrency(credit)}
+                        </p>
+                        <p style={{ margin: '3px 0 0', fontSize: 9, color: C.muted }}>added to outstanding</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Credit Payment History — show when the bill ever had credit
+                 (i.e. there are recorded payments, or there's still due) */}
+            {(payments.length > 0 || (isPartial || isCredit) && credit > 0.01) && (
+              <div style={{ background: C.card, border: `1px solid ${C.cardBorder}`, borderRadius: 16, padding: '16px 18px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Wallet style={{ width: 13, height: 13, color: C.muted }} />
+                    <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      Credit Payments
+                    </p>
+                  </div>
+                  {payments.length > 0 && (
+                    <span style={{ fontSize: 10, fontWeight: 800, color: C.emerald, background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 999, border: `1px solid rgba(16,185,129,0.2)` }}>
+                      {formatCurrency(payments.reduce((s, p) => s + p.amount, 0))} received
+                    </span>
+                  )}
+                </div>
+
+                {payments.length === 0 ? (
+                  <p style={{ margin: 0, fontSize: 11, color: C.muted, textAlign: 'center', padding: '12px 0' }}>
+                    No payments recorded yet.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {payments.map((p) => {
+                      const method = (p.payment_method || '').toLowerCase();
+                      const mColor = paymentColor(method);
+                      return (
+                        <div key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(16,185,129,0.05)', border: `1px solid rgba(16,185,129,0.15)` }}>
+                          <div style={{ width: 28, height: 28, borderRadius: 8, background: `${mColor}1a`, color: mColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <PaymentIcon mode={method || 'cash'} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                              <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: C.emerald }}>
+                                +{formatCurrency(p.amount)}
+                              </p>
+                              <p style={{ margin: 0, fontSize: 10, color: C.muted, textTransform: 'capitalize', flexShrink: 0 }}>
+                                {(p.payment_method || 'cash').replace('_', ' ')}
+                              </p>
+                            </div>
+                            <p style={{ margin: '2px 0 0', fontSize: 10, color: C.muted }}>
+                              {fmtDate(p.created_at)}
+                            </p>
+                            {p.notes && (
+                              <p style={{ margin: '4px 0 0', fontSize: 10, color: C.subtle, fontStyle: 'italic', wordBreak: 'break-word' }}>
+                                {p.notes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             {/* Payment method */}
             <div style={{ background: '#0d1117', border: `1px solid ${C.cardBorder}`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>

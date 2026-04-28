@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { usePanelStore } from "@/store/panelStore";
 import { createClient } from "@/lib/supabase/client";
 import { formatCurrency, monthRange } from "@/lib/utils/format";
-import { TrendingUp, ShoppingCart, Package, AlertTriangle, Clock, Users, DollarSign, BarChart3, Loader2, Zap, ArrowRight } from "lucide-react";
+import { TrendingUp, ShoppingCart, Package, AlertTriangle, Clock, Users, DollarSign, BarChart3, Loader2, Zap, ArrowRight, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { StatCard } from "@/components/panel/StatCard";
@@ -74,35 +74,108 @@ export default function DashboardPage() {
   const loadDashboard = useCallback(async (pid: string) => {
     setLoading(true); setError(null);
     try {
+      // sales.bill_date is `timestamptz`; purchases.bill_date is `date`.
+      // We must use ISO timestamp ranges for sales and date strings for purchases.
       const now = new Date();
-      const todayFrom = new Date(now); todayFrom.setHours(0,0,0,0);
-      const todayTo = new Date(now); todayTo.setHours(23,59,59,999);
+      const todayFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const tomorrowFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+      const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const todayStr = ymd(todayFrom);
+      const todayIsoStart = todayFrom.toISOString();
+      const tomorrowIsoStart = tomorrowFrom.toISOString();
       const { from: mf, to: mt } = monthRange(0);
-      const [salesToday, purchasesToday, medCount, lowStock, expirySoon, expired, monthlySales, returnsToday] = await Promise.all([
-        supabase.from('sales').select('total_amount').eq('pharmacy_id',pid).gte('bill_date',todayFrom.toISOString()).lte('bill_date',todayTo.toISOString()),
-        supabase.from('purchases').select('total_amount').eq('pharmacy_id',pid).gte('created_at',todayFrom.toISOString()).lte('created_at',todayTo.toISOString()),
+      const monthStart = new Date(`${mf}T00:00:00`);
+      const monthEndExclusive = new Date(`${mt}T00:00:00`); monthEndExclusive.setDate(monthEndExclusive.getDate()+1);
+      const monthIsoStart = monthStart.toISOString();
+      const monthIsoEndExclusive = monthEndExclusive.toISOString();
+
+      // 14-day window for chart (start at local midnight 13 days ago, end at start of tomorrow)
+      const chartStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 13, 0, 0, 0, 0);
+      const chartStartStr = ymd(chartStart);
+      const chartIsoStart = chartStart.toISOString();
+      const chartIsoEndExclusive = tomorrowIsoStart;
+
+      const [
+        salesToday, purchasesToday, medCount, lowStock, expirySoon, expired,
+        monthlySales, returnsToday, todaySaleItems, monthSaleItems,
+        activeBatches, customerCredit, chartSales, chartPurchases,
+      ] = await Promise.all([
+        supabase.from('sales').select('id,total_amount').eq('pharmacy_id',pid).gte('bill_date',todayIsoStart).lt('bill_date',tomorrowIsoStart),
+        supabase.from('purchases').select('total_amount').eq('pharmacy_id',pid).eq('bill_date',todayStr),
         supabase.from('medicines').select('id',{count:'exact',head:true}).eq('pharmacy_id',pid),
         supabase.from('batches').select('id',{count:'exact',head:true}).eq('pharmacy_id',pid).lt('stock_quantity',10).gt('stock_quantity',0),
-        supabase.from('batches').select('id',{count:'exact',head:true}).eq('pharmacy_id',pid).lte('expiry_date',new Date(Date.now()+90*86400000).toISOString().split('T')[0]).gte('expiry_date',new Date().toISOString().split('T')[0]),
-        supabase.from('batches').select('id',{count:'exact',head:true}).eq('pharmacy_id',pid).lt('expiry_date',new Date().toISOString().split('T')[0]),
-        supabase.from('sales').select('total_amount').eq('pharmacy_id',pid).gte('bill_date',`${mf}T00:00:00.000Z`).lte('bill_date',`${mt}T23:59:59.999Z`),
-        supabase.from('sale_returns').select('refund_amount').eq('pharmacy_id',pid).gte('return_date',todayFrom.toISOString()).lte('return_date',todayTo.toISOString()),
+        supabase.from('batches').select('id',{count:'exact',head:true}).eq('pharmacy_id',pid).lte('expiry_date',new Date(Date.now()+90*86400000).toISOString().split('T')[0]).gte('expiry_date',todayStr),
+        supabase.from('batches').select('id',{count:'exact',head:true}).eq('pharmacy_id',pid).lt('expiry_date',todayStr),
+        supabase.from('sales').select('id,total_amount,bill_date').eq('pharmacy_id',pid).gte('bill_date',monthIsoStart).lt('bill_date',monthIsoEndExclusive),
+        supabase.from('sale_returns').select('refund_amount').eq('pharmacy_id',pid).gte('return_date',todayIsoStart).lt('return_date',tomorrowIsoStart),
+        // Today's COGS via sale_items joined to batches.purchase_price
+        supabase.from('sale_items').select('quantity,batches!inner(purchase_price),sales!inner(bill_date,pharmacy_id)').eq('sales.pharmacy_id',pid).gte('sales.bill_date',todayIsoStart).lt('sales.bill_date',tomorrowIsoStart),
+        // Month COGS
+        supabase.from('sale_items').select('quantity,batches!inner(purchase_price),sales!inner(bill_date,pharmacy_id)').eq('sales.pharmacy_id',pid).gte('sales.bill_date',monthIsoStart).lt('sales.bill_date',monthIsoEndExclusive),
+        // Real inventory value
+        supabase.from('batches').select('stock_quantity,purchase_price').eq('pharmacy_id',pid).gt('stock_quantity',0),
+        // Outstanding credit across all customers
+        supabase.from('customers').select('outstanding_balance').eq('pharmacy_id',pid),
+        // 14-day sales — bill_date is timestamptz, use ISO range
+        supabase.from('sales').select('total_amount,bill_date').eq('pharmacy_id',pid).gte('bill_date',chartIsoStart).lt('bill_date',chartIsoEndExclusive),
+        // 14-day purchases — bill_date is date, use date strings
+        supabase.from('purchases').select('total_amount,bill_date').eq('pharmacy_id',pid).gte('bill_date',chartStartStr).lte('bill_date',todayStr),
       ]);
+
       const ts = (salesToday.data??[]).reduce((s,r)=>s+(r.total_amount??0),0);
       const tp = (purchasesToday.data??[]).reduce((s,r)=>s+(r.total_amount??0),0);
       const ms = (monthlySales.data??[]).reduce((s,r)=>s+(r.total_amount??0),0);
       const tr = (returnsToday.data??[]).reduce((s,r)=>s+(r.refund_amount??0),0);
-      setStats({ today_sales:ts, today_purchases:tp, today_transactions:salesToday.data?.length??0, today_profit:ts-tp, today_returns:tr,
-        monthly_sales:ms, monthly_profit:ms*0.25, monthly_returns:0, total_stock_value:(medCount.count??0)*125, outstanding_credit:0,
-        total_medicines:medCount.count??0, low_stock_count:lowStock.count??0, expiry_soon_count:expirySoon.count??0, expired_count:expired.count??0 });
+
+      // COGS = quantity * batch.purchase_price summed across sale_items
+      type SaleItemRow = { quantity: number | null; batches: { purchase_price: number | null } | { purchase_price: number | null }[] | null };
+      const sumCogs = (rows: SaleItemRow[] | null | undefined) =>
+        (rows ?? []).reduce((s, r) => {
+          const b = Array.isArray(r.batches) ? r.batches[0] : r.batches;
+          const cost = (r.quantity ?? 0) * (b?.purchase_price ?? 0);
+          return s + cost;
+        }, 0);
+      const todayCogs = sumCogs(todaySaleItems.data as SaleItemRow[] | null);
+      const monthCogs = sumCogs(monthSaleItems.data as SaleItemRow[] | null);
+      const todayProfit = ts - todayCogs;
+      const monthProfit = ms - monthCogs;
+
+      const stockValue = (activeBatches.data ?? []).reduce(
+        (s, b) => s + (b.stock_quantity ?? 0) * (b.purchase_price ?? 0), 0,
+      );
+      const outstanding = (customerCredit.data ?? []).reduce(
+        (s, c) => s + (c.outstanding_balance ?? 0), 0,
+      );
+
+      setStats({
+        today_sales: ts, today_purchases: tp,
+        today_transactions: salesToday.data?.length ?? 0,
+        today_profit: todayProfit, today_returns: tr,
+        monthly_sales: ms, monthly_profit: monthProfit, monthly_returns: 0,
+        total_stock_value: stockValue, outstanding_credit: outstanding,
+        total_medicines: medCount.count ?? 0,
+        low_stock_count: lowStock.count ?? 0,
+        expiry_soon_count: expirySoon.count ?? 0,
+        expired_count: expired.count ?? 0,
+      });
+
+      // Build 14-day series. Sales bucket by local-date of the timestamp;
+      // purchases are already date-only strings.
+      const salesByDay = new Map<string, number>();
+      for (const r of (chartSales.data ?? [])) {
+        const k = ymd(new Date(r.bill_date as string));
+        salesByDay.set(k, (salesByDay.get(k) ?? 0) + (r.total_amount ?? 0));
+      }
+      const purchasesByDay = new Map<string, number>();
+      for (const r of (chartPurchases.data ?? [])) {
+        const k = String(r.bill_date).slice(0,10);
+        purchasesByDay.set(k, (purchasesByDay.get(k) ?? 0) + (r.total_amount ?? 0));
+      }
       const pts: ChartDataPoint[] = [];
-      for (let i=13;i>=0;i--) {
-        const d=new Date(); d.setDate(d.getDate()-i);
-        const ds=new Date(d); ds.setHours(0,0,0,0);
-        const de=new Date(d); de.setHours(23,59,59,999);
-        const { data:day } = await supabase.from('sales').select('total_amount').eq('pharmacy_id',pid).gte('bill_date',ds.toISOString()).lte('bill_date',de.toISOString());
-        const st=(day??[]).reduce((s,r)=>s+(r.total_amount??0),0);
-        pts.push({ date:d.toISOString(), sales:st, purchases:st>0?st*0.6:0 });
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 0, 0, 0, 0);
+        const k = ymd(d);
+        pts.push({ date: d.toISOString(), sales: salesByDay.get(k) ?? 0, purchases: purchasesByDay.get(k) ?? 0 });
       }
       setChartData(pts);
     } catch(err) {
@@ -143,15 +216,15 @@ export default function DashboardPage() {
 
   const topCards = [
     { title:"Today's Sales", rawValue:stats.today_sales, formatted:formatCurrency(stats.today_sales), sub:`${stats.today_transactions} transactions · ${formatCurrency(stats.today_returns)} returned`, icon:ShoppingCart, accent:'#818cf8', to:'/panel/sales', trend:{value:12, label:'vs yesterday'} },
-    { title:"Today's Profit", rawValue:stats.today_profit, formatted:formatCurrency(stats.today_profit), sub:'Gross sales minus purchases', icon:TrendingUp, accent:'#34d399', to:'/panel/reports/profit', trend:{value:8, label:'gross margin'} },
-    { title:'Monthly Revenue', rawValue:stats.monthly_sales, formatted:formatCurrency(stats.monthly_sales), sub:`Est. profit: ${formatCurrency(stats.monthly_profit)}`, icon:BarChart3, accent:'#60a5fa', to:'/panel/reports' },
+    { title:"Today's Profit", rawValue:stats.today_profit, formatted:formatCurrency(stats.today_profit), sub:'Revenue minus cost of goods sold', icon:TrendingUp, accent:'#34d399', to:'/panel/reports/profit', trend:{value:8, label:'gross margin'} },
+    { title:'Monthly Revenue', rawValue:stats.monthly_sales, formatted:formatCurrency(stats.monthly_sales), sub:`Profit: ${formatCurrency(stats.monthly_profit)}`, icon:BarChart3, accent:'#60a5fa', to:'/panel/reports' },
     { title:'Inventory Value', rawValue:stats.total_stock_value, formatted:formatCurrency(stats.total_stock_value), sub:`${stats.total_medicines} medicines in catalogue`, icon:Package, accent:'#a78bfa', to:'/panel/inventory' },
   ];
   const miniCards = [
     { title:'Low Stock', value:String(stats.low_stock_count), icon:AlertTriangle, accent:stats.low_stock_count>0?'#f59e0b':'#475569', alertBg:stats.low_stock_count>0?'rgba(245,158,11,0.07)':undefined, alertBorder:stats.low_stock_count>0?'rgba(245,158,11,0.22)':undefined, to:'/panel/inventory', pulse:stats.low_stock_count>0 },
     { title:'Expiring Soon', value:String(stats.expiry_soon_count), icon:Clock, accent:stats.expiry_soon_count>0?'#f87171':'#475569', alertBg:stats.expiry_soon_count>0?'rgba(239,68,68,0.07)':undefined, alertBorder:stats.expiry_soon_count>0?'rgba(239,68,68,0.22)':undefined, to:'/panel/reports/expiry', pulse:stats.expiry_soon_count>0 },
-    { title:'O/S Credit', value:stats.outstanding_credit>0?formatCurrency(stats.outstanding_credit):'₹0', icon:Users, accent:stats.outstanding_credit>0?'#fb923c':'#475569', to:'/panel/customers', pulse:false },
     { title:"Today's Purchases", value:formatCurrency(stats.today_purchases), icon:DollarSign, accent:'#2dd4bf', to:'/panel/purchases', pulse:false },
+    { title:"Today's Returns", value:formatCurrency(stats.today_returns), icon:RotateCcw, accent:stats.today_returns>0?'#f97316':'#475569', alertBg:stats.today_returns>0?'rgba(249,115,22,0.07)':undefined, alertBorder:stats.today_returns>0?'rgba(249,115,22,0.22)':undefined, to:'/panel/returns', pulse:false },
   ];
 
   return (

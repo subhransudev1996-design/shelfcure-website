@@ -1,8 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { LifeBuoy, Search, MessageSquare, Phone, Mail, ChevronDown, CheckCircle2, Send, Paperclip, X } from 'lucide-react';
+import { LifeBuoy, Search, MessageSquare, Phone, ChevronDown, Send, X, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { createClient } from '@/lib/supabase/client';
+import { usePanelStore } from '@/store/panelStore';
+
+const SUPPORT_PHONE = '+919876543210';
+const SUPPORT_TEL_HREF = 'tel:+919876543210';
 
 /* ─── Palette ─── */
 const C = {
@@ -25,20 +30,46 @@ const FAQS = [
 ];
 
 export default function SupportPage() {
+  const supabase = createClient();
+  const pharmacyId = usePanelStore((s) => s.pharmacyId);
+  const user = usePanelStore((s) => s.user);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFocus, setSearchFocus] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const filteredFaqs = FAQS.filter(f => f.q.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredFaqs = FAQS.filter(f =>
+    f.q.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    f.a.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const handleTicketSubmit = (e: any) => {
+  const handleTicketSubmit = async (e: any) => {
     e.preventDefault();
-    if(!subject || !message) return toast.error('Please fill out all fields');
-    toast.success('Ticket submitted! Our team will reach out shortly.');
-    setSubject('');
-    setMessage('');
+    if (!subject.trim() || !message.trim()) return toast.error('Please fill out all fields');
+    if (!pharmacyId) return toast.error('No pharmacy selected — please re-login');
+
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from('support_tickets').insert({
+        pharmacy_id: pharmacyId,
+        user_id: user?.id ?? null,
+        auth_user_id: user?.auth_user_id ?? null,
+        subject: subject.trim(),
+        message: message.trim(),
+        status: 'open',
+      });
+      if (error) throw error;
+      toast.success('Ticket submitted! Our team will reach out shortly.');
+      setSubject('');
+      setMessage('');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to submit ticket');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -56,7 +87,7 @@ export default function SupportPage() {
         </div>
 
         <div style={{ display: 'flex', gap: 16 }}>
-           <a href="tel:0000000000" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 10, border: `1px solid ${C.cardBorder}`, backgroundColor: C.card, color: C.text, fontSize: 13, fontWeight: 700, textDecoration: 'none', transition: 'all 0.2s' }}>
+           <a href={SUPPORT_TEL_HREF} title={SUPPORT_PHONE} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 10, border: `1px solid ${C.cardBorder}`, backgroundColor: C.card, color: C.text, fontSize: 13, fontWeight: 700, textDecoration: 'none', transition: 'all 0.2s' }}>
              <Phone style={{ width: 14, height: 14, color: C.primary }} /> Call Support
            </a>
         </div>
@@ -153,17 +184,18 @@ export default function SupportPage() {
                     />
                  </div>
 
-                 <button type="button" style={{ display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start', background: 'none', border: 'none', color: C.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.color = C.text} onMouseLeave={e => e.currentTarget.style.color = C.muted}>
-                    <Paperclip style={{ width: 14, height: 14 }} /> Attach Screenshot
-                 </button>
-
-                 <button 
-                   type="submit" 
-                   style={{ marginTop: 8, padding: '12px', borderRadius: 10, border: 'none', backgroundColor: C.text, color: '#000', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', transition: 'transform 0.2s' }}
-                   onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
-                   onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                 <button
+                   type="submit"
+                   disabled={submitting || !subject.trim() || !message.trim()}
+                   style={{ marginTop: 8, padding: '12px', borderRadius: 10, border: 'none', backgroundColor: C.text, color: '#000', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: submitting ? 'wait' : 'pointer', transition: 'transform 0.2s', opacity: (submitting || !subject.trim() || !message.trim()) ? 0.6 : 1 }}
+                   onMouseEnter={e => { if (!submitting) e.currentTarget.style.transform = 'scale(1.02)'; }}
+                   onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
                  >
-                   Submit Ticket <Send style={{ width: 16, height: 16 }} />
+                   {submitting ? (
+                     <><Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> Submitting...</>
+                   ) : (
+                     <>Submit Ticket <Send style={{ width: 16, height: 16 }} /></>
+                   )}
                  </button>
 
               </form>

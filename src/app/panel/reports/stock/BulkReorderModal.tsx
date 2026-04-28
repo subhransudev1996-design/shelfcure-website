@@ -87,7 +87,6 @@ export default function BulkReorderModal({ pharmacyId, pharmacyName, selectedIte
         purchase_order_id: po.id,
         medicine_id: item.medicine_id,
         requested_quantity: quantities[item.medicine_id],
-        pharmacy_id: pharmacyId,
       }));
       const { error: itemErr } = await supabase.from('purchase_order_items').insert(items);
       if (itemErr) throw itemErr;

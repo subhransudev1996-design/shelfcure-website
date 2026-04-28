@@ -163,7 +163,7 @@ export default function BlogPage() {
       </section>
 
       {/* ───────────────────── BLOG CONTENT ───────────────────── */}
-      <section style={{ padding: "2rem 0 8rem", position: "relative", zIndex: 20 }}>
+      <section style={{ padding: "1.5rem 0 4rem", position: "relative", zIndex: 20 }}>
         <div className="section-container">
           
           {/* Categories / Filter Chips */}
@@ -328,14 +328,14 @@ export default function BlogPage() {
       {/* ───────────────────── NEWSLETTER SECTION ───────────────────── */}
       <section
         ref={newsletter.ref}
-        style={{ padding: "8rem 0", position: "relative" }}
+        style={{ padding: "3rem 0", position: "relative" }}
       >
         <div className="section-container" style={{ textAlign: "center", maxWidth: "1000px" }}>
            <div 
              className={newsletter.inView ? "animate-fade-in-up" : "opacity-0"}
              style={{
                background: "linear-gradient(135deg, #0c0a1f 0%, #1a1640 100%)",
-               borderRadius: "2.5rem", padding: "6rem 3rem", color: "white",
+               borderRadius: "2.5rem", padding: "3.5rem 2.5rem", color: "white",
                position: "relative", overflow: "hidden",
                boxShadow: "0 30px 60px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.1)"
              }}

@@ -111,15 +111,20 @@ export default function PanelLoginPage() {
         <div style={{ position: 'relative', zIndex: 1 }}>
           {/* Logo */}
           <div className="animate-fade-in-up" style={{ marginBottom: '2rem' }}>
-            <div style={{
-              display: 'inline-block',
-              background: 'rgba(255,255,255,0.95)',
-              borderRadius: '1rem',
-              padding: '0.6rem 1.25rem',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
-            }}>
-              <Image src="/logo.png" alt="ShelfCure" width={140} height={46} style={{ objectFit: 'contain', display: 'block', width: 'auto', height: 'auto' }} priority />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="ShelfCure"
+              width={100}
+              height={33}
+              style={{
+                objectFit: 'contain',
+                display: 'block',
+                margin: '0 auto',
+                filter: 'brightness(0) invert(1)',
+                opacity: 0.95,
+              }}
+              priority
+            />
           </div>
 
           {/* Badge */}

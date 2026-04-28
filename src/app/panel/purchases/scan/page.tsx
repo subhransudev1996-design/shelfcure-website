@@ -452,20 +452,22 @@ export default function ScanBillPage() {
       if (pe) throw pe;
 
       for (const it of items) {
-        await supabase.from('purchase_items').insert({
+        const batchNum = it.batch_number || `B-${Date.now()}`;
+        const { data: piRow } = await supabase.from('purchase_items').insert({
           purchase_id: pur.id, medicine_id: it.medicine_id,
-          batch_number: it.batch_number || `B-${Date.now()}`,
+          batch_number: batchNum,
           expiry_date: it.expiry_date || null,
           quantity: it.quantity, free_quantity: it.free_quantity || 0,
           purchase_price: it.purchase_rate, mrp: it.mrp,
           gst_rate: it.gst_percentage || 0,
           discount_percent: it.discount_percentage || 0,
           total_amount: it.amount,
-        });
-        const batchNum = it.batch_number || `B-${Date.now()}`;
+        }).select('id').single();
         const totalQty = (it.quantity || 0) + (it.free_quantity || 0);
         const { data: batch } = await supabase.from('batches').insert({
           pharmacy_id: pharmacyId, medicine_id: it.medicine_id,
+          supplier_id: selectedSupplier.id,
+          purchase_item_id: piRow?.id ?? null,
           batch_number: batchNum, expiry_date: it.expiry_date || null,
           purchase_price: it.purchase_rate, mrp: it.mrp,
           stock_quantity: totalQty,

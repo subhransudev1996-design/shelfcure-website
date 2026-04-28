@@ -104,6 +104,19 @@ export default function PanelRegisterPage() {
       if (authError) { setError(friendlyError(authError.message)); return; }
       if (!authData.user) { setError('Failed to create account'); return; }
 
+      // Stash the pharmacy form data so the panel layout can apply it to
+      // the pharmacies row that gets auto-created on first authenticated load.
+      // Without this, only `name` and `owner_name` get populated and the
+      // Settings page shows blank email/phone/address.
+      try {
+        localStorage.setItem('shelfcure-pending-pharmacy', JSON.stringify({
+          email,
+          fullName,
+          pharmacyName, phone, address, city, state, pincode,
+          licenseNumber, gstin,
+        }));
+      } catch {}
+
       // Email confirmation required — no active session yet.
       // DB inserts need an authenticated session (RLS), so we skip them
       // and show a "check your email" screen. The inserts will happen
@@ -191,15 +204,20 @@ export default function PanelRegisterPage() {
         <div style={{ position: 'relative', zIndex: 1 }}>
           {/* Logo */}
           <div className="animate-fade-in-up" style={{ marginBottom: '2rem' }}>
-            <div style={{
-              display: 'inline-block',
-              background: 'rgba(255,255,255,0.95)',
-              borderRadius: '1rem',
-              padding: '0.6rem 1.25rem',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
-            }}>
-              <Image src="/logo.png" alt="ShelfCure" width={140} height={46} style={{ objectFit: 'contain', display: 'block', width: 'auto', height: 'auto' }} priority />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="ShelfCure"
+              width={100}
+              height={33}
+              style={{
+                objectFit: 'contain',
+                display: 'block',
+                margin: '0 auto',
+                filter: 'brightness(0) invert(1)',
+                opacity: 0.95,
+              }}
+              priority
+            />
           </div>
 
           {/* Badge */}

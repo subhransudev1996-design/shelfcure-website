@@ -66,6 +66,7 @@ export default function ContactPage() {
       {/* ───────────────────── HERO SECTION ───────────────────── */}
       <section
         ref={hero.ref}
+        className="ct-hero-section"
         style={{
           paddingTop: "160px",
           paddingBottom: "5rem",
@@ -155,17 +156,16 @@ export default function ContactPage() {
       {/* ───────────────────── CONTACT FORM & INFO ───────────────────── */}
       <section
         ref={contactDetails.ref}
-        style={{ padding: "4rem 0 8rem", position: "relative", zIndex: 20 }}
+        style={{ padding: "2.5rem 0 4rem", position: "relative", zIndex: 20 }}
       >
         <div className="section-container" style={{ maxWidth: "1150px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "4rem", alignItems: "start" }}>
+          <div className="ct-contact-grid">
             
             {/* Contact Form */}
             <div 
-              className={contactDetails.inView ? "animate-fade-in-up" : "opacity-0"}
+              className={contactDetails.inView ? "animate-fade-in-up ct-form-card" : "opacity-0 ct-form-card"}
               style={{
                 background: "rgba(255,255,255,0.7)",
-                padding: "3.5rem",
                 borderRadius: "2rem",
                 boxShadow: "0 30px 60px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,1)",
                 border: "1px solid var(--color-border)",
@@ -189,7 +189,7 @@ export default function ContactPage() {
 
               <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--color-text)", marginBottom: "2.5rem", fontFamily: "var(--font-display)", letterSpacing: "-0.02em" }}>Send us a message</h2>
               <form onSubmit={handleSubmit} style={{ display: "grid", gap: "1.5rem" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                <div className="ct-form-row">
                   <div>
                     <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "var(--color-text)", marginBottom: "0.5rem", opacity: 0.8 }}>Full Name</label>
                     <input 
@@ -285,7 +285,7 @@ export default function ContactPage() {
       {/* ───────────────────── FAQ SECTION (INTERACTIVE) ───────────────────── */}
       <section
         ref={faq.ref}
-        style={{ padding: "6rem 0 8rem" }}
+        style={{ padding: "3.5rem 0 4rem" }}
       >
         <div className="section-container" style={{ maxWidth: "850px" }}>
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
@@ -351,16 +351,9 @@ export default function ContactPage() {
       </section>
 
       {/* ───────────────────── FINAL CTA ───────────────────── */}
-      <section style={{ padding: "0 0 8rem 0" }}>
+      <section style={{ padding: "0 0 4rem 0" }}>
         <div className="section-container" style={{ textAlign: "center", maxWidth: "1000px" }}>
-           <div 
-             style={{
-               background: "linear-gradient(135deg, #0c0a1f 0%, #1a1640 100%)",
-               borderRadius: "3rem", padding: "6rem 3rem", color: "white",
-               position: "relative", overflow: "hidden",
-               boxShadow: "0 30px 60px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.1)"
-             }}
-           >
+           <div className="ct-cta-inner">
               <div style={{ position: "absolute", top: "-50%", left: "-10%", width: "500px", height: "500px", background: "radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)", filter: "blur(60px)", pointerEvents: "none" }} />
               <div style={{ position: "absolute", bottom: "-50%", right: "-10%", width: "500px", height: "500px", background: "radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)", filter: "blur(60px)", pointerEvents: "none" }} />
               <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)", backgroundSize: "40px 40px", pointerEvents: "none", opacity: 0.5 }} />
@@ -436,15 +429,73 @@ export default function ContactPage() {
           0%, 100% { opacity: 1; }
           50% { opacity: 0; }
         }
-        
+
+        /* ── BASE LAYOUTS ── */
+        .ct-contact-grid {
+          display: grid;
+          grid-template-columns: 1.2fr 0.8fr;
+          gap: 4rem;
+          align-items: start;
+        }
+        .ct-form-card { padding: 3.5rem; }
+        .ct-form-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+        }
+        .ct-cta-inner {
+          background: linear-gradient(135deg, #0c0a1f 0%, #1a1640 100%);
+          border-radius: 3rem;
+          padding: 6rem 3rem;
+          color: white;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 30px 60px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        /* ════════ TABLET (≤900px) ════════ */
         @media (max-width: 900px) {
-           div[style*="grid-template-columns: 1.2fr 0.8fr"] {
-              grid-template-columns: 1fr !important;
-              gap: 3rem !important;
-           }
-           div[style*="grid-template-columns: 1fr 1fr"] {
-              grid-template-columns: 1fr !important;
-           }
+          .ct-contact-grid {
+            grid-template-columns: 1fr !important;
+            gap: 2.5rem !important;
+          }
+          .ct-form-card {
+            padding: 2.5rem !important;
+          }
+        }
+
+        /* ════════ MOBILE (≤768px) ════════ */
+        @media (max-width: 768px) {
+          .ct-hero-section {
+            padding-top: 110px !important;
+            padding-bottom: 3rem !important;
+          }
+          .ct-form-row {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+          }
+          .ct-form-card {
+            padding: 2rem !important;
+            border-radius: 1.5rem !important;
+          }
+          .ct-cta-inner {
+            padding: 3.5rem 1.5rem !important;
+            border-radius: 1.75rem !important;
+          }
+        }
+
+        /* ════════ SMALL MOBILE (≤480px) ════════ */
+        @media (max-width: 480px) {
+          .ct-hero-section {
+            padding-top: 90px !important;
+          }
+          .ct-form-card {
+            padding: 1.5rem !important;
+          }
+          .ct-cta-inner {
+            padding: 2.5rem 1.25rem !important;
+            border-radius: 1.25rem !important;
+          }
         }
       `}</style>
     </div>

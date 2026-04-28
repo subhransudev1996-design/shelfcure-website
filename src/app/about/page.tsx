@@ -268,7 +268,7 @@ export default function About() {
       <section
         ref={stats.ref}
         style={{
-          padding: "5rem 0",
+          padding: "3rem 0",
           background: "linear-gradient(180deg, #1a1640 0%, #0c0a1f 30%, #0c0a1f 70%, white 100%)",
           position: "relative",
         }}
@@ -344,7 +344,7 @@ export default function About() {
       <section
         ref={story.ref}
         style={{
-          padding: "8rem 0",
+          padding: "3rem 0",
           background: "white",
           position: "relative",
           zIndex: 1,
@@ -467,7 +467,7 @@ export default function About() {
       <section
         ref={timeline.ref}
         style={{
-          padding: "7rem 0",
+          padding: "4rem 0",
           background: "linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)",
           position: "relative",
         }}
@@ -572,7 +572,7 @@ export default function About() {
       <section
         ref={vision.ref}
         style={{
-          padding: "7rem 0",
+          padding: "4rem 0",
           background: "white",
         }}
       >
@@ -676,7 +676,7 @@ export default function About() {
       <section
         ref={values.ref}
         style={{
-          padding: "8rem 0",
+          padding: "3rem 0",
           background: "linear-gradient(180deg, #f8fafc 0%, #eef2ff 50%, #f8fafc 100%)",
           position: "relative",
         }}
@@ -817,7 +817,7 @@ export default function About() {
       <section
         ref={team.ref}
         style={{
-          padding: "8rem 0",
+          padding: "3rem 0",
           background: "white",
           position: "relative",
           overflow: "hidden",
@@ -972,7 +972,7 @@ export default function About() {
       <section
         ref={techStack.ref}
         style={{
-          padding: "5rem 0",
+          padding: "3rem 0",
           background: "linear-gradient(180deg, #f0f4ff 0%, #eef2ff 100%)",
           overflow: "hidden",
         }}
@@ -1043,7 +1043,7 @@ export default function About() {
       <section
         ref={cta.ref}
         style={{
-          padding: "8rem 0",
+          padding: "3rem 0",
           background: "white",
         }}
       >
@@ -1051,7 +1051,7 @@ export default function About() {
           <div style={{
             background: "linear-gradient(135deg, #0c0a1f 0%, #1a1640 50%, #312e81 100%)",
             borderRadius: "3rem",
-            padding: "5rem 3rem",
+            padding: "3.5rem 3rem",
             textAlign: "center",
             position: "relative",
             overflow: "hidden",

@@ -87,7 +87,7 @@ export default function CustomersPage() {
         .select('id, name, phone, email, address, outstanding_balance, total_purchases, created_at')
         .eq('pharmacy_id', pharmacyId)
         .order('name')
-        .limit(500);
+        .limit(5000);
 
       if (error) throw error;
       setCustomers((data || []).map(c => ({ ...c, outstanding_balance: c.outstanding_balance || 0, total_purchases: c.total_purchases || 0 })));
@@ -301,20 +301,35 @@ export default function CustomersPage() {
                 {/* Divider */}
                 <div style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.03)', margin: '4px 0' }} />
 
-                {/* Footer: Credit balance */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 10, color: C.muted, fontWeight: 700, textTransform: 'uppercase' }}>Account Status</span>
-                  {hasCredit ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 6, backgroundColor: `${C.rose}10`, border: `1px solid ${C.rose}15`, color: C.rose }}>
-                      <IndianRupee style={{ width: 10, height: 10 }} />
-                      <span style={{ fontSize: 11, fontWeight: 900 }}>{formatCurrency(c.outstanding_balance)} due</span>
+                {/* Footer: Outstanding balance — prominent panel when due */}
+                {hasCredit ? (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 12px', borderRadius: 10,
+                    backgroundColor: `${C.rose}12`,
+                    border: `1px solid ${C.rose}30`,
+                  }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span style={{ fontSize: 9, color: C.rose, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.85 }}>
+                        Outstanding Balance
+                      </span>
+                      <span style={{ fontSize: 10, color: C.muted, fontWeight: 500 }}>Owed to pharmacy</span>
                     </div>
-                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2, color: C.rose }}>
+                      <IndianRupee style={{ width: 13, height: 13 }} />
+                      <span style={{ fontSize: 15, fontWeight: 900, letterSpacing: '-0.02em' }}>
+                        {formatCurrency(c.outstanding_balance).replace('₹', '')}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 10, color: C.muted, fontWeight: 700, textTransform: 'uppercase' }}>Account Status</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 6, backgroundColor: `${C.emerald}10`, border: `1px solid ${C.emerald}15`, color: C.emerald }}>
                       <span style={{ fontSize: 11, fontWeight: 800 }}>Clear</span>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
               </div>
             );

@@ -258,7 +258,7 @@ export default function CareersPage() {
         </section>
 
         {/* Roles Section */}
-        <section style={{ padding: "6rem 0 8rem" }}>
+        <section style={{ padding: "3.5rem 0 4rem" }}>
           <div className="section-container" style={{ maxWidth: "800px" }}>
             <h2 style={{ fontSize: "2.5rem", fontWeight: 700, color: "#1e293b", marginBottom: "2.5rem" }}>Open Roles</h2>
             

@@ -180,6 +180,7 @@ export default function DownloadPage() {
       {/* ═══════════════ HERO SECTION ═══════════════ */}
       <section
         ref={hero.ref}
+        className="dl-hero-section"
         style={{
           paddingTop: "160px", paddingBottom: "5rem",
           position: "relative",
@@ -291,7 +292,7 @@ export default function DownloadPage() {
 
           {/* Quick info */}
           <div
-            className={hero.inView ? "animate-fade-in-up delay-500" : "opacity-0"}
+            className={`dl-quick-info ${hero.inView ? "animate-fade-in-up delay-500" : "opacity-0"}`}
             style={{
               display: "flex", justifyContent: "center", gap: "2rem", marginTop: "2rem", flexWrap: "wrap",
             }}
@@ -323,10 +324,7 @@ export default function DownloadPage() {
         }}
       >
         <div className="section-container">
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem",
-            maxWidth: "700px", margin: "0 auto",
-          }}>
+          <div className="dl-stats-grid">
             {[
               { value: `${downloads.toLocaleString()}+`, label: "Total Downloads", icon: Icons.inbox },
               { value: `${(rating / 10).toFixed(1)} ★`, label: "User Rating", icon: Icons.star },
@@ -369,7 +367,7 @@ export default function DownloadPage() {
       <section
         id="platforms"
         ref={platforms.ref}
-        style={{ padding: "5rem 0", background: "white" }}
+        style={{ padding: "3rem 0", background: "white" }}
       >
         <div className="section-container">
           <div style={{ textAlign: "center", marginBottom: "3rem" }}>
@@ -412,7 +410,7 @@ export default function DownloadPage() {
               background: "linear-gradient(90deg, #6366f1, #818cf8, #a78bfa)",
             }} />
 
-            <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
+            <div className="dl-win-header">
               {/* Windows icon */}
               <div style={{
                 width: 90, height: 90, borderRadius: "1.5rem",
@@ -435,7 +433,7 @@ export default function DownloadPage() {
             </div>
 
             {/* Details grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", margin: "2rem 0" }}>
+            <div className="dl-details-grid">
               {[
                 { label: "Architecture", value: "x64 / ARM64" },
                 { label: "Requires", value: "Windows 10 or later" },
@@ -491,7 +489,7 @@ export default function DownloadPage() {
       {/* ═══════════════ SETUP STEPS ═══════════════ */}
       <section
         ref={setup.ref}
-        style={{ padding: "7rem 0", background: "linear-gradient(180deg, #f8fafc, #eef2ff, #f8fafc)" }}
+        style={{ padding: "4rem 0", background: "linear-gradient(180deg, #f8fafc, #eef2ff, #f8fafc)" }}
       >
         <div className="section-container">
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
@@ -512,12 +510,9 @@ export default function DownloadPage() {
             >Up and running in <span style={{ color: "#6366f1" }}>3 minutes</span></h2>
           </div>
 
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1.5rem",
-            position: "relative",
-          }}>
+          <div className="dl-setup-grid">
             {/* Connecting line */}
-            <div style={{
+            <div className="dl-setup-line" style={{
               position: "absolute", top: 52, left: "12.5%", right: "12.5%", height: 2,
               background: "linear-gradient(90deg, rgba(99,102,241,0.08), rgba(99,102,241,0.2), rgba(99,102,241,0.08))",
               zIndex: 0,
@@ -568,12 +563,10 @@ export default function DownloadPage() {
       {/* ═══════════════ MOBILE COMPANION ═══════════════ */}
       <section
         ref={mobile.ref}
-        style={{ padding: "7rem 0", background: "white" }}
+        style={{ padding: "4rem 0", background: "white" }}
       >
         <div className="section-container">
-          <div className="mobile-layout" style={{
-            display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5rem", alignItems: "center",
-          }}>
+          <div className="dl-mobile-layout">
             {/* Left: Phone Mockup */}
             <div className={mobile.inView ? "animate-fade-in-up" : "opacity-0"}>
               <div style={{
@@ -686,7 +679,7 @@ export default function DownloadPage() {
               </p>
 
               {/* Feature pills */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "2.5rem" }}>
+              <div className="dl-feature-pills">
                 {[
                   { title: "< 50ms Sync", desc: "Real-time WebSocket" },
                   { title: "QR Pairing", desc: "Connect in 2 seconds" },
@@ -708,7 +701,7 @@ export default function DownloadPage() {
               </div>
 
               {/* Store buttons */}
-              <div style={{ display: "flex", gap: "1rem" }}>
+              <div className="dl-store-btns">
                 {[
                   { store: "App Store", sub: "Download on the", icon: Icons.apple },
                   { store: "Google Play", sub: "Get it on", icon: Icons.playTriangle },
@@ -737,7 +730,7 @@ export default function DownloadPage() {
       {/* ═══════════════ CHANGELOG ═══════════════ */}
       <section
         ref={changelogSection.ref}
-        style={{ padding: "7rem 0", background: "#f8fafc" }}
+        style={{ padding: "4rem 0", background: "#f8fafc" }}
       >
         <div className="section-container" style={{ maxWidth: "800px" }}>
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
@@ -811,7 +804,7 @@ export default function DownloadPage() {
       {/* ═══════════════ SYSTEM REQUIREMENTS ═══════════════ */}
       <section
         ref={requirements.ref}
-        style={{ padding: "7rem 0", background: "white" }}
+        style={{ padding: "4rem 0", background: "white" }}
       >
         <div className="section-container">
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
@@ -832,10 +825,7 @@ export default function DownloadPage() {
             >System Requirements</h2>
           </div>
 
-          <div className="req-grid" style={{
-            display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1.5rem",
-            maxWidth: "900px", margin: "0 auto",
-          }}>
+          <div className="dl-req-grid">
             {[
               { title: "Processor", desc: "Intel i3 / Apple M1 or equivalent", icon: Icons.cpu, value: "Dual Core" },
               { title: "Memory", desc: "4GB minimum, 8GB recommended", icon: Icons.database, value: "4GB+" },
@@ -874,14 +864,10 @@ export default function DownloadPage() {
       {/* ═══════════════ FINAL CTA ═══════════════ */}
       <section
         ref={cta.ref}
-        style={{ padding: "6rem 0 8rem", background: "#f8fafc" }}
+        style={{ padding: "3.5rem 0 4rem", background: "#f8fafc" }}
       >
         <div className="section-container">
-          <div style={{
-            background: "linear-gradient(135deg, #0c0a1f 0%, #1a1640 50%, #312e81 100%)",
-            borderRadius: "3rem", padding: "5rem 3rem",
-            textAlign: "center", position: "relative", overflow: "hidden",
-          }}>
+          <div className="dl-cta-inner">
             {/* Orbs */}
             <div className="animate-float" style={{
               position: "absolute", top: "-50%", left: "-10%", width: 400, height: 400,
@@ -942,33 +928,115 @@ export default function DownloadPage() {
           0%, 100% { top: 20%; }
           50% { top: 70%; }
         }
-        @keyframes subtle-bounce {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.08); }
-          100% { transform: scale(1); }
+        @keyframes blink {
+          0%, 100% { opacity: 1; } 50% { opacity: 0; }
         }
+
+        /* ── BASE LAYOUTS ── */
+        .dl-stats-grid {
+          display: grid; grid-template-columns: repeat(3, 1fr);
+          gap: 1.5rem; max-width: 700px; margin: 0 auto;
+        }
+        .dl-win-header { display: flex; align-items: center; gap: 2rem; }
+        .dl-details-grid {
+          display: grid; grid-template-columns: 1fr 1fr;
+          gap: 1rem; margin: 2rem 0;
+        }
+        .dl-setup-grid {
+          display: grid; grid-template-columns: repeat(4, 1fr);
+          gap: 1.5rem; position: relative;
+        }
+        .dl-mobile-layout {
+          display: grid; grid-template-columns: 1fr 1fr;
+          gap: 5rem; align-items: center;
+        }
+        .dl-feature-pills {
+          display: grid; grid-template-columns: 1fr 1fr;
+          gap: 1rem; margin-bottom: 2.5rem;
+        }
+        .dl-store-btns { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .dl-req-grid {
+          display: grid; grid-template-columns: repeat(4, 1fr);
+          gap: 1.5rem; max-width: 900px; margin: 0 auto;
+        }
+        .dl-cta-inner {
+          background: linear-gradient(135deg, #0c0a1f 0%, #1a1640 50%, #312e81 100%);
+          border-radius: 3rem; padding: 5rem 3rem;
+          text-align: center; position: relative; overflow: hidden;
+        }
+        .dl-quick-info { gap: 2rem; }
+        .dl-win-icon { width: 90px; height: 90px; flex-shrink: 0; }
+
+        /* ════════════ TABLET (≤900px) ════════════ */
         @media (max-width: 900px) {
-          .platform-grid {
+          .dl-mobile-layout {
             grid-template-columns: 1fr !important;
-            max-width: 400px !important;
-            margin: 0 auto !important;
+            gap: 2rem !important;
           }
-          .mobile-layout {
-            grid-template-columns: 1fr !important;
-            gap: 3rem !important;
-          }
-          .req-grid {
+          .dl-setup-grid {
             grid-template-columns: repeat(2, 1fr) !important;
           }
-          div[style*="grid-template-columns: repeat(4"] {
+          .dl-setup-line { display: none; }
+          .dl-req-grid {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
-        @media (max-width: 640px) {
-          .req-grid {
+
+        /* ════════════ MOBILE (≤768px) ════════════ */
+        @media (max-width: 768px) {
+          .dl-hero-section {
+            padding-top: 110px !important;
+            padding-bottom: 3rem !important;
+          }
+          .dl-stats-grid {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+          }
+          .dl-win-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 1rem !important;
+          }
+          .dl-details-grid {
             grid-template-columns: 1fr !important;
           }
-          div[style*="grid-template-columns: repeat(4"] {
+          .dl-quick-info { gap: 1rem !important; }
+          .dl-cta-inner {
+            padding: 3rem 1.5rem !important;
+            border-radius: 1.75rem !important;
+          }
+          .dl-store-btns { flex-direction: column !important; }
+        }
+
+        /* ════════════ SMALL MOBILE (≤640px) ════════════ */
+        @media (max-width: 640px) {
+          .dl-hero-section {
+            padding-top: 90px !important;
+          }
+          .dl-setup-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .dl-req-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .dl-feature-pills {
+            grid-template-columns: 1fr !important;
+          }
+          .dl-stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.75rem !important;
+          }
+          .dl-cta-inner {
+            padding: 2.5rem 1.25rem !important;
+          }
+        }
+
+        /* ════════════ XS (≤400px) ════════════ */
+        @media (max-width: 400px) {
+          .dl-stats-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .dl-req-grid {
             grid-template-columns: 1fr !important;
           }
         }

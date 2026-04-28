@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Icons } from "@/components/Icons";
 import { HeroSection } from "@/components/HeroSection";
+import { FeatureSetSection } from "@/components/FeatureSetSection";
 
 /* ═══════════════════════════════════════════════════════════
    INTERSECTION-OBSERVER HOOK  — reveal-on-scroll
@@ -61,7 +62,7 @@ export default function Home() {
       <section
         ref={mission.ref}
         style={{
-          padding: "5rem 0 6rem 0",
+          padding: "clamp(2rem, 4vw, 3.5rem) 0 clamp(2rem, 4vw, 4rem) 0",
           background: "linear-gradient(180deg, #0c0a1f 0%, #1a1640 8%, #eef2ff 25%, #f0f4ff 50%, #eef2ff 100%)",
           overflow: "hidden",
           position: "relative",
@@ -136,7 +137,7 @@ export default function Home() {
         {/* ── Impact stats row ── */}
         <div className="section-container">
           <div
-            className={mission.inView ? "animate-fade-in-up delay-200" : "opacity-0"}
+            className={`stats-impact-grid ${mission.inView ? "animate-fade-in-up delay-200" : "opacity-0"}`}
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
@@ -331,7 +332,7 @@ export default function Home() {
             .marquee-track { animation-duration: 20s; }
           }
           @media (max-width: 640px) {
-            div[style*="grid-template-columns: repeat(3"] {
+            .stats-impact-grid {
               grid-template-columns: 1fr !important;
             }
           }
@@ -342,7 +343,7 @@ export default function Home() {
       <section
         ref={featuresGrid.ref}
         style={{
-          padding: "5rem 0 8rem 0",
+          padding: "clamp(2rem, 4vw, 3.5rem) 0 clamp(2.5rem, 5vw, 5rem) 0",
           position: "relative",
           zIndex: 10,
           background: "linear-gradient(180deg, #eef2ff 0%, #e8ecff 40%, #eef2ff 100%)",
@@ -787,12 +788,20 @@ export default function Home() {
                 grid-template-columns: 1fr !important;
               }
             }
+            @media (max-width: 640px) {
+              .features-bento > div:first-child {
+                grid-template-columns: 1fr !important;
+                min-height: auto !important;
+                padding: 2rem 1.25rem !important;
+                gap: 2rem !important;
+              }
+            }
           `}</style>
         </div>
       </section>
 
       {/* ───────────────────── INTEGRATION SECTION ───────────────────── */}
-      <section ref={integrations.ref} style={{ padding: "8rem 0", background: "white", overflow: "hidden" }}>
+      <section ref={integrations.ref} style={{ padding: "clamp(2.5rem, 5vw, 5rem) 0", background: "white", overflow: "hidden" }}>
         <div className="section-container" style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
 
           <div className={`insight-chip ${integrations.inView ? "animate-fade-in-up" : "opacity-0"}`} style={{ marginBottom: "1.5rem" }}>
@@ -800,7 +809,7 @@ export default function Home() {
             <span style={{ color: "var(--color-primary)", fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase" }}>Integration</span>
           </div>
 
-          <h2 className={`text-display-md ${integrations.inView ? "animate-fade-in-up delay-100" : "opacity-0"}`} style={{ color: "#1E293B", fontWeight: 600, maxWidth: "700px", lineHeight: "1.2" }}>
+          <h2 className={`text-display-md integration-heading ${integrations.inView ? "animate-fade-in-up delay-100" : "opacity-0"}`} style={{ color: "#1E293B", fontWeight: 600, maxWidth: "700px", lineHeight: "1.2" }}>
             Seamlessly Integrate With All<br />Your Healthcare Apps
           </h2>
 
@@ -815,7 +824,60 @@ export default function Home() {
             </span>
           </a>
 
-          <div className={`${integrations.inView ? "animate-fade-in-up delay-400" : "opacity-0"}`} style={{ marginTop: "5rem", position: "relative", width: "100%", maxWidth: "1100px", height: "300px" }}>
+          {/* ── Mobile-only: Integration Logo Grid ── */}
+          <div className="integration-mobile-grid">
+            <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "1.25rem", marginTop: "2.5rem" }}>
+              Works with 18+ platforms
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.625rem", justifyContent: "center", maxWidth: "360px" }}>
+              {[
+                "Epic","Cerner","Allscripts","Meditech","Athena","CureMD",
+                "eClinicalWorks","Kareo","AdvancedMD","Greenway","Rhythm Health",
+                "Optum","McKesson","Amerisource","Cardinal","SureScripts","NextGen",
+                "DrFirst","Practo","Zocdoc"
+              ].map((name, i) => (
+                <span key={name} className="integration-pill" style={{ animationDelay: `${i * 0.05}s` }}>
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <style>{`
+            /* ── Integration mobile grid ── */
+            .integration-mobile-grid {
+              display: none;
+              flex-direction: column;
+              align-items: center;
+            }
+            .integration-pill {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.35rem;
+              padding: 0.35rem 0.85rem;
+              background: white;
+              border: 1px solid rgba(99,102,241,0.15);
+              border-radius: 2rem;
+              font-size: 0.78rem;
+              font-weight: 600;
+              color: #475569;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+              white-space: nowrap;
+              transition: all 0.25s ease;
+            }
+            .integration-pill:hover {
+              border-color: rgba(99,102,241,0.4);
+              color: #6366f1;
+              box-shadow: 0 4px 14px rgba(99,102,241,0.12);
+              transform: translateY(-1px);
+            }
+            @media (max-width: 768px) {
+              .integration-mobile-grid { display: flex; }
+              .integration-orbit-diagram { display: none !important; }
+            }
+          `}</style>
+
+          <div className={`integration-orbit-diagram ${integrations.inView ? "animate-fade-in-up delay-400" : "opacity-0"}`} style={{ marginTop: "5rem", position: "relative", width: "100%", maxWidth: "1100px", height: "300px" }}>
 
             {/* Horizontal lines */}
             <div style={{ position: "absolute", top: "50%", left: 0, width: "100%", height: "1px", borderTop: "2px dashed rgba(203,213,225,0.4)" }} />
@@ -1082,7 +1144,7 @@ export default function Home() {
       <section
         ref={aiFeatures.ref}
         style={{
-          padding: "6rem 0",
+          padding: "clamp(2rem, 4vw, 4rem) 0",
           background: "linear-gradient(180deg, #eef2ff 0%, #f0f4ff 50%, #f8fafc 100%)",
           overflow: "hidden",
           position: "relative",
@@ -1347,6 +1409,8 @@ export default function Home() {
             </div>
 
             {/* ── Center AI Brain Hub (Intersection) ── */}
+            {/* ai-hub-mobile-wrapper: on mobile becomes a flex row that centres the hub */}
+            <div className="ai-hub-mobile-wrapper">
             <div className="ai-center-hub" style={{
               position: "absolute",
               top: "50%", left: "50%",
@@ -1425,6 +1489,7 @@ export default function Home() {
                 </svg>
               </div>
             </div>
+            </div>{/* end ai-hub-mobile-wrapper */}
           </div>
         </div>
 
@@ -1488,12 +1553,38 @@ export default function Home() {
             0%, 100% { transform: translateY(-50%) translateY(0); }
             50% { transform: translateY(-50%) translateY(-4px); }
           }
+
+          /* Desktop: wrapper is invisible so absolute hub positions normally */
+          .ai-hub-mobile-wrapper {
+            display: contents;
+          }
           @media (max-width: 768px) {
             .ai-features-grid {
               grid-template-columns: 1fr !important;
             }
+            /* On mobile: show the hub as a centred block between cards */
+            .ai-hub-mobile-wrapper {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              padding: 0.5rem 0 1rem;
+            }
             .ai-center-hub {
-              display: none;
+              /* switch from absolute to relative so it flows in the column */
+              position: relative !important;
+              top: auto !important;
+              left: auto !important;
+              transform: none !important;
+              /* scale up slightly so it is readable on mobile */
+              width: 150px !important;
+              height: 150px !important;
+              margin: 0 auto;
+              /* mobile-specific float (no translate offset) */
+              animation: ai-center-float-mobile 4s ease-in-out infinite !important;
+            }
+            @keyframes ai-center-float-mobile {
+              0%, 100% { transform: translateY(0); }
+              50% { transform: translateY(-8px); }
             }
             .ai-feat-float-1, .ai-feat-float-2 {
               display: none;
@@ -1507,7 +1598,7 @@ export default function Home() {
         ref={stats.ref}
         style={{
           background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%)",
-          padding: "6rem 0",
+          padding: "clamp(2rem, 4vw, 4rem) 0",
           position: "relative",
           overflow: "hidden",
         }}
@@ -1659,7 +1750,7 @@ export default function Home() {
       <section
         ref={why.ref}
         id="why"
-        style={{ padding: "8rem 0", background: "var(--color-surface)", position: "relative", overflow: "hidden" }}
+        style={{ padding: "clamp(2.5rem, 5vw, 5rem) 0", background: "var(--color-surface)", position: "relative", overflow: "hidden" }}
       >
         {/* Animated Background Orbs */}
         <div style={{ position: "absolute", top: "5%", left: "-10%", width: "50vw", height: "50vw", background: "radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 60%)", borderRadius: "50%", filter: "blur(60px)", animation: "float 15s ease-in-out infinite" }} />
@@ -1937,130 +2028,13 @@ export default function Home() {
       </section>
 
 
-      {/* ───────────────────── ALL FEATURES OVERVIEW ───────────────────── */}
-      <section style={{ padding: "8rem 0", background: "var(--color-background)", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 50% at 50% 50%, rgba(99,102,241,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />
-        <div className="container">
-          <div style={{ textAlign: "center", marginBottom: "4rem" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: "var(--radius-full)", padding: "0.35rem 1rem", marginBottom: "1.5rem" }}>
-              <span style={{ display: "flex", color: "#6366f1" }}>{Icons.sparkle}</span>
-              <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", textTransform: "uppercase" }}>Complete Feature Set</span>
-            </div>
-            <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800, color: "var(--color-on-surface)", letterSpacing: "-0.03em", marginBottom: "1rem" }}>
-              One software. Every pharmacy need.
-            </h2>
-            <p style={{ fontSize: "1.1rem", color: "var(--color-on-surface-variant)", maxWidth: "560px", margin: "0 auto" }}>
-              From AI-powered billing to GST compliance — every tool your pharmacy needs, built into a single offline-first desktop app.
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem", marginBottom: "3rem" }}>
-            {[
-              {
-                icon: Icons.zap, color: "#6366f1", bg: "rgba(99,102,241,0.1)",
-                label: "Smart Billing", href: "/features#billing",
-                features: ["AI-powered bill scanning", "Barcode scanner support", "Edit bill after saving", "Sales & purchase returns", "Quick favourites list", "Auto medicine suggestions"],
-              },
-              {
-                icon: Icons.box, color: "#0ea5e9", bg: "rgba(14,165,233,0.1)",
-                label: "Inventory Control", href: "/features#inventory",
-                features: ["12,000+ medicine database", "Expiry date alerts", "Low stock reorder alerts", "Batch & lot tracking", "Auto-generate challan", "Real-time stock levels"],
-              },
-              {
-                icon: Icons.fileText, color: "#10b981", bg: "rgba(16,185,129,0.1)",
-                label: "GST & Compliance", href: "/features#gst",
-                features: ["GSTR-1 ready reports", "Auto HSN code mapping", "CGST/SGST/IGST split", "Annual PDF export", "Tax summary dashboard", "One-click filing prep"],
-              },
-              {
-                icon: Icons.trendingUp, color: "#f59e0b", bg: "rgba(245,158,11,0.1)",
-                label: "Reports & Profit", href: "/features#reports",
-                features: ["Daily profit & loss", "Top selling medicines", "Slow-moving stock report", "Expense tracker", "Net profit trend chart", "Monthly comparison"],
-              },
-              {
-                icon: Icons.user, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)",
-                label: "Customer & Credit", href: "/features#customers",
-                features: ["Credit ledger per customer", "Regular medicine profiles", "Outstanding dues tracker", "One-click rebill", "Customer visit history", "SMS due reminders"],
-              },
-              {
-                icon: Icons.store, color: "#ec4899", bg: "rgba(236,72,153,0.1)",
-                label: "Supplier Management", href: "/features#suppliers",
-                features: ["Supplier ledger & history", "Purchase return tracking", "Payment due alerts", "Multi-supplier comparison", "Order history log", "Pending challan view"],
-              },
-              {
-                icon: Icons.sparkle, color: "#f97316", bg: "rgba(249,115,22,0.1)",
-                label: "Promotions", href: "/features#promotions",
-                features: ["Festival discount offers", "Buy X get Y free", "Scheme management", "Promotion usage tracking", "Date-range scheduling", "Category-level offers"],
-              },
-            ].map((cat) => (
-              <a
-                key={cat.label}
-                href={cat.href}
-                style={{
-                  display: "block",
-                  background: "var(--color-surface)",
-                  border: "1px solid var(--color-outline-variant)",
-                  borderRadius: "var(--radius-xl)",
-                  padding: "1.75rem",
-                  textDecoration: "none",
-                  transition: "border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = cat.color; (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; (e.currentTarget as HTMLElement).style.boxShadow = `0 12px 32px ${cat.bg}`; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--color-outline-variant)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "none"; }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.875rem", marginBottom: "1.25rem" }}>
-                  <div style={{ width: "2.5rem", height: "2.5rem", borderRadius: "0.75rem", background: cat.bg, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color, flexShrink: 0 }}>
-                    {cat.icon}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--color-on-surface)" }}>{cat.label}</div>
-                    <div style={{ fontSize: "0.75rem", color: cat.color, fontWeight: 600 }}>View details →</div>
-                  </div>
-                </div>
-                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {cat.features.map(f => (
-                    <li key={f} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--color-on-surface-variant)" }}>
-                      <span style={{ display: "flex", color: cat.color, flexShrink: 0 }}>{Icons.check}</span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              </a>
-            ))}
-          </div>
-
-          <div style={{ textAlign: "center" }}>
-            <a
-              href="/features"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                background: "var(--color-primary)",
-                color: "#fff",
-                padding: "0.875rem 2rem",
-                borderRadius: "var(--radius-full)",
-                fontWeight: 600,
-                fontSize: "0.95rem",
-                textDecoration: "none",
-                transition: "opacity 0.2s ease",
-              }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = "0.85")}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = "1")}
-            >
-              <span style={{ display: "flex" }}>{Icons.sparkle}</span>
-              Explore all features in detail
-            </a>
-          </div>
-        </div>
-      </section>
+      <FeatureSetSection />
 
       {/* ───────────────────── HOW IT WORKS ───────────────────── */}
       <section
         ref={steps.ref}
         id="getting-started"
-        style={{ padding: "8rem 0", background: "var(--color-surface)", position: "relative", overflow: "hidden" }}
+        style={{ padding: "clamp(2.5rem, 5vw, 5rem) 0", background: "var(--color-surface)", position: "relative", overflow: "hidden" }}
       >
         <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: "100%", height: "2px", background: "linear-gradient(90deg, transparent, rgba(99,102,241,0.2), transparent)" }} />
         
@@ -2265,7 +2239,7 @@ export default function Home() {
         ref={cta.ref}
         id="cta"
         style={{
-          padding: "6rem 0",
+          padding: "clamp(2rem, 4vw, 4rem) 0",
           background: "linear-gradient(180deg, #eef2ff 0%, #f0f4ff 100%)",
         }}
       >
@@ -2275,7 +2249,7 @@ export default function Home() {
             style={{
               background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%)",
               borderRadius: "1.75rem",
-              padding: "4rem 3rem",
+              padding: "clamp(2rem, 5vw, 4rem) clamp(1.25rem, 4vw, 3rem)",
               textAlign: "center",
               position: "relative",
               overflow: "hidden",

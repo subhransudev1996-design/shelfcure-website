@@ -612,7 +612,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* ═══ 7-TAB FEATURE SHOWCASE ═══ */}
-      <section ref={showcase.ref} style={{ padding: "6rem 0 8rem", background: "white", position: "relative" }}>
+      <section ref={showcase.ref} style={{ padding: "3.5rem 0 4rem", background: "white", position: "relative" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(99,102,241,0.03) 1px, transparent 1px)", backgroundSize: "32px 32px", pointerEvents: "none" }} />
         <div className="section-container" style={{ position: "relative" }}>
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
@@ -715,7 +715,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* ═══ ALL FEATURES AT A GLANCE ═══ */}
-      <section ref={allFeatures.ref} style={{ padding: "7rem 0", background: "linear-gradient(180deg, #f8fafc, #eef2ff, #f8fafc)" }}>
+      <section ref={allFeatures.ref} style={{ padding: "4rem 0", background: "linear-gradient(180deg, #f8fafc, #eef2ff, #f8fafc)" }}>
         <div className="section-container">
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
             <div className={allFeatures.inView ? "animate-fade-in-up" : "opacity-0"} style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.35rem 0.9rem", background: "rgba(99,102,241,0.08)", borderRadius: "var(--radius-full)", marginBottom: "1.25rem" }}>
@@ -751,7 +751,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* ═══ WORKFLOW ═══ */}
-      <section ref={workflow.ref} style={{ padding: "7rem 0", background: "white" }}>
+      <section ref={workflow.ref} style={{ padding: "4rem 0", background: "white" }}>
         <div className="section-container">
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
             <div className={workflow.inView ? "animate-fade-in-up" : "opacity-0"} style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.35rem 0.9rem", background: "rgba(99,102,241,0.08)", borderRadius: "var(--radius-full)", marginBottom: "1.25rem" }}>
@@ -782,7 +782,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* ═══ COMPARISON TABLE ═══ */}
-      <section ref={comparison.ref} style={{ padding: "7rem 0", background: "linear-gradient(180deg, #f8fafc, #eef2ff)" }}>
+      <section ref={comparison.ref} style={{ padding: "4rem 0", background: "linear-gradient(180deg, #f8fafc, #eef2ff)" }}>
         <div className="section-container">
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
             <div className={comparison.inView ? "animate-fade-in-up" : "opacity-0"} style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.35rem 0.9rem", background: "rgba(99,102,241,0.08)", borderRadius: "var(--radius-full)", marginBottom: "1.25rem" }}>
@@ -829,9 +829,9 @@ export default function FeaturesPage() {
       </section>
 
       {/* ═══ CTA ═══ */}
-      <section ref={cta.ref} style={{ padding: "8rem 0", background: "white" }}>
+      <section ref={cta.ref} style={{ padding: "3rem 0", background: "white" }}>
         <div className="section-container">
-          <div style={{ background: "linear-gradient(135deg, #0c0a1f 0%, #1a1640 50%, #312e81 100%)", borderRadius: "3rem", padding: "5rem 3rem", textAlign: "center", position: "relative", overflow: "hidden" }}>
+          <div style={{ background: "linear-gradient(135deg, #0c0a1f 0%, #1a1640 50%, #312e81 100%)", borderRadius: "3rem", padding: "3.5rem 3rem", textAlign: "center", position: "relative", overflow: "hidden" }}>
             <div className="animate-float" style={{ position: "absolute", top: "-50%", left: "-10%", width: 400, height: 400, background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)", filter: "blur(60px)" }} />
             <div className="animate-float" style={{ position: "absolute", bottom: "-40%", right: "-5%", width: 350, height: 350, background: "radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)", filter: "blur(50px)", animationDelay: "2s" }} />
             <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(99,102,241,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.05) 1px, transparent 1px)", backgroundSize: "40px 40px", maskImage: "radial-gradient(ellipse 60% 50% at 50% 50%, black 10%, transparent 70%)", WebkitMaskImage: "radial-gradient(ellipse 60% 50% at 50% 50%, black 10%, transparent 70%)", pointerEvents: "none" }} />

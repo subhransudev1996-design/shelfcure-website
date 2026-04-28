@@ -94,10 +94,15 @@ export default function PurchasesPage() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [searchFocus, setSearchFocus] = useState(false);
-  const [preset, setPreset] = useState<DatePreset>('month');
+  const [preset, setPreset] = useState<DatePreset>('all');
 
   const { from: mFrom, to: mTo } = monthRange(0);
-  const [dateFrom, setDateFrom] = useState(mFrom);
+  // Default custom range: last 12 months → today, so newly saved purchases (any date) appear.
+  const defaultFrom = (() => {
+    const d = new Date(); d.setFullYear(d.getFullYear() - 1);
+    return d.toISOString().split('T')[0];
+  })();
+  const [dateFrom, setDateFrom] = useState(defaultFrom);
   const [dateTo, setDateTo] = useState(mTo);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -440,8 +445,8 @@ export default function PurchasesPage() {
               {search ? `No results for "${search}"` : 'No purchases in this period'}
             </p>
           </div>
-          {(search || preset !== 'month') && (
-            <button onClick={() => { setSearch(''); setPreset('month'); }}
+          {(search || preset !== 'all') && (
+            <button onClick={() => { setSearch(''); setPreset('all'); }}
               style={{ padding: '9px 18px', borderRadius: 10, border: `1px solid ${C.cardBorder}`, backgroundColor: 'rgba(255,255,255,0.04)', color: C.muted, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
               Clear all filters
             </button>

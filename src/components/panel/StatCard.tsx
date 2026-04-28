@@ -52,6 +52,9 @@ export function StatCard({
           ? `0 24px 64px rgba(0,0,0,0.45), 0 0 0 1px ${accent}22, inset 0 1px 0 rgba(255,255,255,0.08)`
           : 'inset 0 1px 0 rgba(255,255,255,0.05)',
         backdropFilter: 'blur(12px)',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       {/* top-right glow */}
@@ -90,8 +93,8 @@ export function StatCard({
         </div>
       </div>
 
-      {sub && <p style={{ fontSize:11, color:'#3d4f68', marginTop:16, fontWeight:500, lineHeight:1.5, borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:14 }}>{sub}</p>}
+      {sub && <p style={{ fontSize:11, color:'#3d4f68', marginTop:'auto', paddingTop:14, fontWeight:500, lineHeight:1.5, borderTop:'1px solid rgba(255,255,255,0.05)' }}>{sub}</p>}
     </div>
   );
-  return to ? <Link href={to} style={{ textDecoration:'none', display:'block' }}>{card}</Link> : card;
+  return to ? <Link href={to} style={{ textDecoration:'none', display:'block', height:'100%' }}>{card}</Link> : card;
 }

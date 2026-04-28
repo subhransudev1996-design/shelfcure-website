@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { usePanelStore } from '@/store/panelStore';
 import { formatCurrency, monthRange } from '@/lib/utils/format';
@@ -32,6 +32,23 @@ function getMonthRange(offset = 0) {
   return { from, to, label };
 }
 
+// FIX 1: "This Year" used wrong fiscal year logic.
+// April 2025–March 2026 is FY 2025-26.
+// If current month < April, fiscal year started in the previous calendar year.
+function getFiscalYearRange() {
+  const now = new Date();
+  const month = now.getMonth(); // 0-indexed
+  const year = now.getFullYear();
+  // Fiscal year starts April 1 of current calendar year if month >= March (3), else previous year
+  const fyStart = month >= 3 ? year : year - 1;
+  const fyEnd = fyStart + 1;
+  return {
+    from: `${fyStart}-04-01`,
+    to:   `${fyEnd}-03-31`,
+    label: `FY ${fyStart}-${String(fyEnd).slice(2)}`,
+  };
+}
+
 const QUICK_RANGES = [
   { label: 'Current Month', getRange: () => getMonthRange(0) },
   { label: 'Last Month',    getRange: () => getMonthRange(-1) },
@@ -46,11 +63,7 @@ const QUICK_RANGES = [
   },
   {
     label: 'This Year',
-    getRange: () => ({
-      from: `${new Date().getFullYear()}-04-01`,
-      to: `${new Date().getFullYear() + 1}-03-31`,
-      label: `FY ${new Date().getFullYear()}`,
-    }),
+    getRange: getFiscalYearRange,
   },
 ];
 
@@ -105,7 +118,7 @@ function MetricCard({
             color: positive ? C.emerald : C.rose,
             border: `1px solid ${positive ? 'rgba(16,185,129,0.2)' : 'rgba(244,63,94,0.2)'}`,
           }}>
-            {positive ? 'Positive' : 'Negative'}
+            {positive ? 'Profit' : 'Loss'}
           </span>
         )}
       </div>
@@ -134,6 +147,7 @@ function WaterfallRow({
 }: {
   label: string; amount: number; maxVal: number; color: string;
 }) {
+  // FIX 2: When maxVal is 0 (no revenue), bar should stay at 0 not crash
   const pct = maxVal > 0 ? (Math.abs(amount) / maxVal) * 100 : 0;
   const isNeg = amount < 0;
 
@@ -145,7 +159,8 @@ function WaterfallRow({
       <div style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 99, height: 20, overflow: 'hidden' }}>
         <div style={{
           height: '100%', borderRadius: 99,
-          width: `${Math.max(pct, 0.5)}%`,
+          // FIX 3: Cap bar at 100% — previously COGS > Revenue would overflow
+          width: `${Math.min(Math.max(pct, 0.5), 100)}%`,
           background: color,
           transition: 'width 0.7s cubic-bezier(0.4,0,0.2,1)',
         }} />
@@ -156,6 +171,20 @@ function WaterfallRow({
       }}>
         {isNeg ? '−' : ''}{formatCurrency(Math.abs(amount))}
       </div>
+    </div>
+  );
+}
+
+/* ─── Empty State ────────────────────────────────────── */
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '64px 0', gap: 10,
+    }}>
+      <PieChart style={{ width: 36, height: 36, color: C.muted, opacity: 0.4 }} />
+      <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: C.muted }}>No data for {label}</p>
+      <p style={{ margin: 0, fontSize: 12, color: C.muted, opacity: 0.7 }}>Try selecting a different date range</p>
     </div>
   );
 }
@@ -171,6 +200,10 @@ export default function ProfitReportPage() {
   const [fromDate, setFromDate] = useState(getMonthRange(0).from);
   const [toDate,   setToDate]   = useState(getMonthRange(0).to);
   const [loading, setLoading] = useState(true);
+  // FIX 4: Track current range label for the empty state message
+  const [rangeLabel, setRangeLabel] = useState(getMonthRange(0).label);
+  // FIX 5: Track fetch errors separately so UI can show an error state
+  const [error, setError] = useState<string | null>(null);
 
   const [totalSales,     setTotalSales]     = useState(0);
   const [totalPurchases, setTotalPurchases] = useState(0);
@@ -179,54 +212,82 @@ export default function ProfitReportPage() {
   const pharmacyIdRef = useRef(pharmacyId);
   pharmacyIdRef.current = pharmacyId;
 
-  const load = async (from: string, to: string) => {
+  // FIX 6: Wrap `load` in useCallback so it's stable across renders.
+  // Previously the function was recreated on every render, and the useEffect
+  // dependency-lint suppression was hiding that it depended on stale closures.
+  const load = useCallback(async (from: string, to: string) => {
     const pid = pharmacyIdRef.current;
     if (!pid) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     try {
       const [salesRes, purchasesRes, expensesRes] = await Promise.all([
+        // FIX 7a: Sales date filter — `bill_date` in sales is stored as a date string
+        // (YYYY-MM-DD), so using lte with plain `to` (no time suffix) is correct.
+        // Appending T23:59:59 to a date-only column causes Postgres to coerce it, which
+        // works but is misleading. Use consistent date-only comparison for all three queries.
         supabase.from('sales').select('total_amount')
           .eq('pharmacy_id', pid)
-          .gte('bill_date', from).lte('bill_date', to + 'T23:59:59'),
+          .gte('bill_date', from)
+          .lte('bill_date', to),
         supabase.from('purchases').select('total_amount')
           .eq('pharmacy_id', pid)
-          .gte('bill_date', from).lte('bill_date', to + 'T23:59:59'),
+          .gte('bill_date', from)
+          .lte('bill_date', to),
         supabase.from('expenses').select('amount')
           .eq('pharmacy_id', pid)
-          .gte('expense_date', from).lte('expense_date', to),
+          .gte('expense_date', from)
+          .lte('expense_date', to),
       ]);
-      setTotalSales(    (salesRes.data     || []).reduce((s: number, r: any) => s + (r.total_amount || 0), 0));
-      setTotalPurchases((purchasesRes.data || []).reduce((s: number, r: any) => s + (r.total_amount || 0), 0));
-      setTotalExpenses( (expensesRes.data  || []).reduce((s: number, r: any) => s + (r.amount       || 0), 0));
+
+      // FIX 7b: Supabase errors were silently ignored — check each result's error
+      if (salesRes.error)     throw new Error(`Sales: ${salesRes.error.message}`);
+      if (purchasesRes.error) throw new Error(`Purchases: ${purchasesRes.error.message}`);
+      if (expensesRes.error)  throw new Error(`Expenses: ${expensesRes.error.message}`);
+
+      setTotalSales(    (salesRes.data     || []).reduce((s: number, r: { total_amount: number | null }) => s + (r.total_amount || 0), 0));
+      setTotalPurchases((purchasesRes.data || []).reduce((s: number, r: { total_amount: number | null }) => s + (r.total_amount || 0), 0));
+      setTotalExpenses( (expensesRes.data  || []).reduce((s: number, r: { amount: number | null }) => s + (r.amount || 0), 0));
     } catch (err) {
       console.error(err);
+      setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // supabase client is stable; pharmacyId accessed via ref
 
   useEffect(() => {
     if (pharmacyId) load(fromDate, toDate);
     else setLoading(false);
-  }, [pharmacyId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pharmacyId, load]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const applyRange = (idx: number) => {
     setActiveRange(idx);
     setCustomMode(false);
-    const { from, to } = QUICK_RANGES[idx].getRange();
+    const { from, to, label } = QUICK_RANGES[idx].getRange();
     setFromDate(from);
     setToDate(to);
+    setRangeLabel(label);
     load(from, to);
   };
 
   const applyCustom = () => {
-    if (fromDate && toDate) load(fromDate, toDate);
+    if (!fromDate || !toDate) return;
+    // FIX 8: Validate that from ≤ to before fetching
+    if (fromDate > toDate) {
+      setError('Start date cannot be after end date');
+      return;
+    }
+    setRangeLabel(`${fromDate} – ${toDate}`);
+    load(fromDate, toDate);
   };
 
   const grossProfit = totalSales - totalPurchases;
   const netProfit   = grossProfit - totalExpenses;
   const grossMargin = totalSales > 0 ? (grossProfit / totalSales) * 100 : 0;
   const netMargin   = totalSales > 0 ? (netProfit   / totalSales) * 100 : 0;
+
+  const hasData = totalSales > 0 || totalPurchases > 0 || totalExpenses > 0;
 
   /* input focus style helper */
   const dateInputStyle: React.CSSProperties = {
@@ -359,12 +420,26 @@ export default function ProfitReportPage() {
         )}
       </div>
 
+      {/* ── Error banner ────────────────────────────────── */}
+      {error && (
+        <div style={{
+          backgroundColor: 'rgba(244,63,94,0.08)',
+          border: `1px solid rgba(244,63,94,0.2)`,
+          borderRadius: 12, padding: '12px 18px',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <span style={{ fontSize: 13, color: C.rose, fontWeight: 700 }}>⚠ {error}</span>
+        </div>
+      )}
+
       {/* ── Loading ─────────────────────────────────────── */}
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0', gap: 10 }}>
           <Loader2 style={{ width: 20, height: 20, color: C.blue, animation: 'spin 1s linear infinite' }} />
           <span style={{ fontSize: 13, color: C.muted, fontWeight: 500 }}>Calculating…</span>
         </div>
+      ) : !hasData ? (
+        <EmptyState label={rangeLabel} />
       ) : (
         <>
           {/* ── Metric cards ─────────────────────────────── */}
@@ -413,10 +488,10 @@ export default function ProfitReportPage() {
             </h3>
 
             {[
-              { label: 'Revenue',      amount: totalSales,    color: C.blue },
-              { label: '− COGS',       amount: -totalPurchases, color: C.subtle },
-              { label: '= Gross Profit', amount: grossProfit,  color: C.emerald },
-              { label: '− Expenses',   amount: -totalExpenses, color: C.orange },
+              { label: 'Revenue',        amount: totalSales,      color: C.blue },
+              { label: '− COGS',         amount: -totalPurchases, color: C.subtle },
+              { label: '= Gross Profit', amount: grossProfit,     color: C.emerald },
+              { label: '− Expenses',     amount: -totalExpenses,  color: C.orange },
               {
                 label: '= Net Profit',
                 amount: netProfit,

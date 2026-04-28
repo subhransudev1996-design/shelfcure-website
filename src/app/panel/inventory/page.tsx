@@ -8,6 +8,7 @@ import { formatCurrency } from '@/lib/utils/format';
 import {
   Package2, Plus, AlertTriangle, Clock, ChevronRight, Loader2,
   Search, X, TrendingDown, AlertCircle, BarChart3, RefreshCw, IndianRupee,
+  MapPin,
 } from 'lucide-react';
 
 /* ─── Types ───────────────────────────────────────────────── */
@@ -16,6 +17,10 @@ interface Medicine {
   manufacturer: string | null; dosage_form: string | null;
   pack_size: number; hsn_code: string | null; gst_rate: number;
   min_stock_level: number;
+  sale_unit_mode: 'pack' | 'both' | null;
+  units_per_pack: number;
+  pack_unit: string | null;
+  rack_location: string | null;
   // joined
   total_quantity: number; batch_count: number; min_expiry: string | null;
   purchase_price: number | null; mrp: number | null;
@@ -32,20 +37,38 @@ const C = {
 };
 
 /* ─── Sub-components ──────────────────────────────────────── */
-function StockBadge({ qty, min }: { qty: number; min: number }) {
+function StockBadge({ qty, min, upp, mode, packUnit }: {
+  qty: number; min: number;
+  upp: number; mode: 'pack' | 'both' | null; packUnit: string | null;
+}) {
   const isOut = qty === 0;
   const isLow = qty > 0 && qty < min;
   const color = isOut ? C.rose : isLow ? C.amber : C.emerald;
-  const label = isOut ? 'Out' : isLow ? `${qty} ⚠` : `${qty}`;
+  const isFlex = mode === 'both' && upp > 1;
+  const strips = isFlex ? Math.floor(qty / upp) : 0;
+  const loose = isFlex ? qty - strips * upp : 0;
+  const stripLabel = (packUnit || 'Strip').toLowerCase().startsWith('strip') ? 'str' : (packUnit || 'pk').slice(0, 3).toLowerCase();
+  let primary: string;
+  if (isOut) primary = 'Out';
+  else if (isFlex) {
+    const parts: string[] = [];
+    if (strips > 0) parts.push(`${strips} ${stripLabel}`);
+    if (loose > 0) parts.push(`${loose} u`);
+    primary = parts.length ? parts.join(' + ') : `${qty} u`;
+  } else {
+    primary = `${qty}`;
+  }
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
       padding: '2px 9px', borderRadius: 20,
       backgroundColor: `${color}15`,
       color, fontSize: 11, fontWeight: 800,
+      whiteSpace: 'nowrap',
     }}>
       {isOut && <AlertTriangle style={{ width: 10, height: 10 }} />}
-      {label}
+      {primary}
+      {isLow && !isOut && ' ⚠'}
     </span>
   );
 }
@@ -90,7 +113,7 @@ export default function InventoryPage() {
     try {
       const { data: meds } = await supabase
         .from('medicines')
-        .select('id, name, generic_name, manufacturer, dosage_form, pack_size, hsn_code, gst_rate, min_stock_level')
+        .select('id, name, generic_name, manufacturer, dosage_form, pack_size, hsn_code, gst_rate, min_stock_level, sale_unit_mode, units_per_pack, pack_unit, rack_location')
         .eq('pharmacy_id', pharmacyId)
         .order('name')
         .limit(300);
@@ -100,6 +123,8 @@ export default function InventoryPage() {
           id: string; name: string; generic_name: string | null; manufacturer: string | null;
           dosage_form: string | null; pack_size: number; hsn_code: string | null;
           gst_rate: number; min_stock_level: number;
+          sale_unit_mode: 'pack' | 'both' | null; units_per_pack: number | null; pack_unit: string | null;
+          rack_location: string | null;
         }) => {
           const { data: batches } = await supabase
             .from('batches')
@@ -116,7 +141,11 @@ export default function InventoryPage() {
           const last = batches && batches.length > 0 ? batches[batches.length - 1] : null;
 
           return {
-            ...med, total_quantity: totalQty,
+            ...med,
+            sale_unit_mode: med.sale_unit_mode ?? null,
+            units_per_pack: med.units_per_pack ?? 1,
+            pack_unit: med.pack_unit ?? null,
+            total_quantity: totalQty,
             batch_count: batches?.length ?? 0, min_expiry: minExpiry,
             purchase_price: last?.purchase_price ?? null,
             mrp: last?.mrp ?? null,
@@ -147,7 +176,8 @@ export default function InventoryPage() {
           m.name.toLowerCase().includes(q) ||
           (m.generic_name || '').toLowerCase().includes(q) ||
           (m.manufacturer || '').toLowerCase().includes(q) ||
-          (m.dosage_form || '').toLowerCase().includes(q)
+          (m.dosage_form || '').toLowerCase().includes(q) ||
+          (m.rack_location || '').toLowerCase().includes(q)
         );
       }
       if (filter === 'low') f = f.filter(m => m.total_quantity > 0 && m.total_quantity < m.min_stock_level);
@@ -175,7 +205,7 @@ export default function InventoryPage() {
   ];
 
   /* ─── Columns ── */
-  const COL = '1fr 90px 80px 90px 100px 105px 105px 36px';
+  const COL = '1fr 90px 75px 80px 90px 100px 105px 105px 36px';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -242,7 +272,7 @@ export default function InventoryPage() {
           onChange={e => setSearch(e.target.value)}
           onFocus={() => setSearchFocus(true)}
           onBlur={() => setSearchFocus(false)}
-          placeholder="Search medicines..."
+          placeholder="Search by name, manufacturer, rack..."
           style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, fontWeight: 500, color: C.text, fontFamily: 'inherit' }}
         />
         {search && (
@@ -281,7 +311,7 @@ export default function InventoryPage() {
         <div style={{ backgroundColor: C.card, border: `1px solid ${C.cardBorder}`, borderRadius: 16, overflow: 'hidden' }}>
           {/* Header row */}
           <div style={{ display: 'grid', gridTemplateColumns: COL, padding: '10px 20px', borderBottom: `1px solid ${C.cardBorder}`, backgroundColor: 'rgba(255,255,255,0.015)', alignItems: 'center' }}>
-            {['Medicine', 'Form', 'Stock', 'Batches', 'Nearest Expiry',
+            {['Medicine', 'Form', 'Rack', 'Stock', 'Batches', 'Nearest Expiry',
               <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><IndianRupee style={{ width: 10, height: 10 }} />Purchase</span>,
               <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><IndianRupee style={{ width: 10, height: 10 }} />MRP</span>,
               '',
@@ -320,8 +350,17 @@ export default function InventoryPage() {
                 <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.04)', color: C.muted, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {med.dosage_form || '—'}
                 </span>
+                {/* Rack */}
+                {med.rack_location ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, padding: '2px 8px', borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.05)', color: C.text, fontWeight: 700, fontFamily: 'monospace', maxWidth: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <MapPin style={{ width: 9, height: 9, color: C.indigoLight, flexShrink: 0 }} />
+                    {med.rack_location}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: 11, color: '#334155' }}>—</span>
+                )}
                 {/* Stock */}
-                <div><StockBadge qty={med.total_quantity} min={med.min_stock_level || 10} /></div>
+                <div><StockBadge qty={med.total_quantity} min={med.min_stock_level || 10} upp={med.units_per_pack || 1} mode={med.sale_unit_mode} packUnit={med.pack_unit} /></div>
                 {/* Batches */}
                 <p style={{ margin: 0, fontSize: 12, color: C.muted, fontWeight: 600 }}>{med.batch_count}</p>
                 {/* Expiry */}

@@ -159,7 +159,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
         className="hero-section"
         onMouseMove={handleMouseMove}
         style={{
-          paddingTop: "140px",
+          paddingTop: "clamp(90px, 14vh, 140px)",
           paddingBottom: "0",
           position: "relative",
           overflow: "hidden",
@@ -250,7 +250,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
       {/* ═══ MAIN CONTENT ═══ */}
       <div
-        className="section-container"
+        className="hero-content-grid section-container"
         style={{
           position: "relative",
           zIndex: 2,
@@ -672,6 +672,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
           {/* ── NOTIFICATION TOAST (animated) ── */}
           <div
+            className="hero-toast-wrapper"
             style={{
               position: "absolute",
               bottom: "-20px",
@@ -831,15 +832,16 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
         /* ── Mobile responsive ── */
         @media (max-width: 1024px) {
-          .section-container {
+          .hero-content-grid {
             grid-template-columns: 1fr !important;
             text-align: center;
+            gap: 3rem !important;
           }
           .hero-right-col {
             max-width: 560px;
             margin: 0 auto;
           }
-          .section-container > div:first-child {
+          .hero-content-grid > div:first-child {
             align-items: center;
           }
           .hero-flex-container {
@@ -849,6 +851,7 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
 
         @media (max-width: 768px) {
           .hero-floating-card { display: none !important; }
+          .hero-toast-wrapper { display: none !important; }
           .hero-section {
             min-height: auto !important;
             padding-bottom: 4rem !important;
@@ -856,10 +859,13 @@ export function HeroSection({ heroRef, inView }: HeroSectionProps) {
           .hero-right-col {
             max-width: 100%;
           }
+          .hero-content-grid {
+            min-height: auto !important;
+          }
         }
 
         @media (max-width: 480px) {
-          .section-container {
+          .hero-content-grid {
             gap: 2rem !important;
           }
         }

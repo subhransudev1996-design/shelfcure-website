@@ -9,6 +9,7 @@ import {
   AlertTriangle, Clock, Package, CheckCheck, ArrowRight, X, Menu,
 } from 'lucide-react';
 import Link from 'next/link';
+import { GlobalSearch } from './GlobalSearch';
 
 const BORDER = 'rgba(255,255,255,0.06)';
 
@@ -66,8 +67,22 @@ export function TopBar() {
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [notices, setNotices] = useState<AppNotice[]>(STATIC_NOTICES);
   const [loadingNotices, setLoadingNotices] = useState(false);
+
+  // Global ⌘K / Ctrl+K to open search
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const isK = e.key === 'k' || e.key === 'K';
+      if (isK && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSearchOpen((s) => !s);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLDivElement>(null);
@@ -189,8 +204,10 @@ export function TopBar() {
       {/* Right controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
 
-        {/* Search hint */}
+        {/* Search trigger */}
         <button
+          onClick={() => setSearchOpen(true)}
+          title="Search (Ctrl+K)"
           style={{ ...btnBase, gap: 8, padding: '7px 12px', borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}`, color: '#475569', fontSize: 11, fontWeight: 600 }}
           onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#94a3b8'; }}
           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#475569'; }}
@@ -374,6 +391,8 @@ export function TopBar() {
         @keyframes spin { to { transform:rotate(360deg); } }
         @keyframes bellPop { from { transform:scale(0.5); } to { transform:scale(1); } }
       `}</style>
+
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   );
 }

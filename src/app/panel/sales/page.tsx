@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { usePanelStore } from '@/store/panelStore';
-import { formatCurrency, formatDate, formatRelativeTime, monthRange } from '@/lib/utils/format';
+import { formatCurrency, formatDate, formatTime, formatRelativeTime, monthRange } from '@/lib/utils/format';
 import {
   Receipt, ChevronRight, Loader2, IndianRupee, Search, X,
   Calendar, RefreshCw, TrendingUp, ShoppingBag, Users, CreditCard,
@@ -14,8 +14,12 @@ import {
 /* ─── Types ─────────────────────────────────────── */
 interface Sale {
   id: string;
+  bill_number: string | null;
   patient_name: string | null;
   doctor_name: string | null;
+  customer_id: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
   bill_date: string;
   total_amount: number;
   discount_amount: number | null;
@@ -129,7 +133,7 @@ export default function SalesPage() {
     try {
       let q = supabase
         .from('sales')
-        .select('id, patient_name, doctor_name, bill_date, total_amount, discount_amount, net_amount, payment_mode, status')
+        .select('id, bill_number, patient_name, doctor_name, customer_id, bill_date, total_amount, discount_amount, net_amount, payment_mode, status, customers(name, phone)')
         .eq('pharmacy_id', pharmacyId)
         .gte('bill_date', dateFrom)
         .lte('bill_date', dateTo + 'T23:59:59')
@@ -137,7 +141,8 @@ export default function SalesPage() {
         .limit(300);
 
       if (search.trim()) {
-        q = q.or(`patient_name.ilike.%${search}%,doctor_name.ilike.%${search}%`);
+        // Search both denormalized patient_name and the joined customer name/phone.
+        q = q.or(`bill_number.ilike.%${search}%,patient_name.ilike.%${search}%,doctor_name.ilike.%${search}%,customers.name.ilike.%${search}%,customers.phone.ilike.%${search}%`);
       }
 
       const { data, error } = await q;
@@ -145,12 +150,17 @@ export default function SalesPage() {
 
       // Enrich with item count
       const enriched = await Promise.all(
-        (data || []).map(async (sale) => {
+        (data || []).map(async (sale: any) => {
           const { count } = await supabase
             .from('sale_items')
             .select('id', { count: 'exact', head: true })
             .eq('sale_id', sale.id);
-          return { ...sale, item_count: count ?? 0 };
+          return {
+            ...sale,
+            customer_name: sale.customers?.name ?? null,
+            customer_phone: sale.customers?.phone ?? null,
+            item_count: count ?? 0,
+          };
         })
       );
       setSales(enriched);
@@ -175,7 +185,7 @@ export default function SalesPage() {
   /* ─── Derived stats ─── */
   const totalRevenue = sales.reduce((s, r) => s + (r.net_amount ?? r.total_amount ?? 0), 0);
   const avgBill = sales.length > 0 ? totalRevenue / sales.length : 0;
-  const uniquePatients = new Set(sales.map(s => s.patient_name || 'Walk-in')).size;
+  const uniquePatients = new Set(sales.map(s => s.customer_id || s.customer_name || s.patient_name || 'Walk-in')).size;
   const topPaymentEntry = Object.entries(
     sales.reduce<Record<string, number>>((acc, s) => {
       const k = (s.payment_mode || 'cash').toLowerCase();
@@ -280,7 +290,7 @@ export default function SalesPage() {
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             onFocus={() => setSearchFocus(true)} onBlur={() => setSearchFocus(false)}
-            placeholder="Search patient, doctor..."
+            placeholder="Search bill #, patient, doctor..."
             style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 12, fontWeight: 500, color: C.text, fontFamily: 'inherit' }}
           />
           {search && (
@@ -319,9 +329,9 @@ export default function SalesPage() {
         <div style={{ backgroundColor: C.card, border: `1px solid ${C.cardBorder}`, borderRadius: 16, overflow: 'hidden' }}>
 
           {/* Table header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '44px 1fr 1fr 130px 80px 80px 110px 36px', alignItems: 'center', padding: '10px 16px', borderBottom: `1px solid ${C.cardBorder}`, backgroundColor: 'rgba(255,255,255,0.012)' }}>
-            {['#', 'Patient / Doctor', 'Date & Time', 'Payment', 'Items', 'Discount', 'Net Amount', ''].map((h, i) => (
-              <p key={i} style={{ margin: 0, fontSize: 9, fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.09em', textAlign: i >= 5 && i < 7 ? 'right' : 'left' }}>{h}</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '44px 130px 1fr 1fr 130px 80px 80px 110px 36px', alignItems: 'center', padding: '10px 16px', borderBottom: `1px solid ${C.cardBorder}`, backgroundColor: 'rgba(255,255,255,0.012)' }}>
+            {['#', 'Bill #', 'Patient / Doctor', 'Date & Time', 'Payment', 'Items', 'Discount', 'Net Amount', ''].map((h, i) => (
+              <p key={i} style={{ margin: 0, fontSize: 9, fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.09em', textAlign: i >= 6 && i < 8 ? 'right' : 'left' }}>{h}</p>
             ))}
           </div>
 
@@ -336,7 +346,7 @@ export default function SalesPage() {
                   key={sale.id}
                   onClick={() => router.push(`/panel/sales/${sale.id}`)}
                   style={{
-                    display: 'grid', gridTemplateColumns: '44px 1fr 1fr 130px 80px 80px 110px 36px',
+                    display: 'grid', gridTemplateColumns: '44px 130px 1fr 1fr 130px 80px 80px 110px 36px',
                     alignItems: 'center', padding: '13px 16px', cursor: 'pointer',
                     borderBottom: idx < sales.length - 1 ? `1px solid rgba(255,255,255,0.025)` : 'none',
                     transition: 'background 0.12s ease',
@@ -350,22 +360,31 @@ export default function SalesPage() {
                     <span style={{ fontSize: 10, color: '#334155', fontWeight: 700 }}>{idx + 1}</span>
                   </div>
 
-                  {/* Patient / Doctor */}
+                  {/* Bill # */}
+                  <span style={{ fontSize: 11, fontWeight: 800, color: C.text, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={sale.bill_number || sale.id}>
+                    {sale.bill_number || `#${sale.id.slice(0, 8).toUpperCase()}`}
+                  </span>
+
+                  {/* Customer / Patient / Doctor */}
                   <div style={{ minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {sale.patient_name || 'Walk-in Patient'}
+                      {sale.customer_name || sale.patient_name || 'Walk-in Customer'}
                     </p>
-                    {sale.doctor_name && (
-                      <p style={{ margin: '2px 0 0', fontSize: 10, color: C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        Dr. {sale.doctor_name}
-                      </p>
-                    )}
+                    <p style={{ margin: '2px 0 0', fontSize: 10, color: C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {sale.customer_phone
+                        ? sale.customer_phone
+                        : sale.doctor_name
+                          ? `Dr. ${sale.doctor_name}`
+                          : 'Walk-in'}
+                    </p>
                   </div>
 
-                  {/* Date */}
+                  {/* Date & Time */}
                   <div>
                     <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>{formatDate(sale.bill_date)}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 10, color: C.muted }}>{formatRelativeTime(sale.bill_date)}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 10, color: C.muted }}>
+                      {formatTime(sale.bill_date)} · {formatRelativeTime(sale.bill_date)}
+                    </p>
                   </div>
 
                   {/* Payment */}
@@ -396,8 +415,8 @@ export default function SalesPage() {
           </div>
 
           {/* Footer */}
-          <div style={{ padding: '12px 20px', borderTop: `1px solid ${C.cardBorder}`, backgroundColor: 'rgba(255,255,255,0.01)', display: 'grid', gridTemplateColumns: '44px 1fr 1fr 130px 80px 80px 110px 36px', alignItems: 'center' }}>
-            <div /><div /><div /><div />
+          <div style={{ padding: '12px 20px', borderTop: `1px solid ${C.cardBorder}`, backgroundColor: 'rgba(255,255,255,0.01)', display: 'grid', gridTemplateColumns: '44px 130px 1fr 1fr 130px 80px 80px 110px 36px', alignItems: 'center' }}>
+            <div /><div /><div /><div /><div />
             <p style={{ margin: 0, fontSize: 10, color: C.muted, fontWeight: 700 }}>{sales.length} bills</p>
             {/* Total discount */}
             <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: C.amber, textAlign: 'right' }}>

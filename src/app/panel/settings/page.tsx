@@ -8,7 +8,7 @@ import {
   Save, Loader2, User, Settings as SettingsIcon, Building2,
   Users, Phone, Mail, FileText, MapPin, Building, ShieldCheck, 
   Map, Fingerprint, Lock, Shield, CheckCircle2, AlertCircle, ChevronRight,
-  MonitorSmartphone, Laptop, Smartphone, UserPlus
+  MonitorSmartphone, Laptop, Smartphone, UserPlus, Wallet
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -19,14 +19,60 @@ const C = {
   bg: '#020617',          // Slate 950
   card: '#0B1121',        // Very dark blue
   cardBorder: 'rgba(255,255,255,0.08)',
-  text: '#f8fafc', 
+  text: '#f8fafc',
   muted: '#94a3b8',
   primary: '#3b82f6',     // Blue 500
   primaryHover: '#2563eb',// Blue 600
-  emerald: '#10b981', 
+  emerald: '#10b981',
   inputBg: 'rgba(255,255,255,0.02)',
   inputHover: 'rgba(255,255,255,0.04)',
 };
+
+/* ─── Vercel/Linear Style Setting Row (hoisted to preserve input focus) ─── */
+function SettingRow({ id, title, desc, icon: Icon, children, isLast = false, focused, onFocus, onBlur }: any) {
+  return (
+    <div
+      style={{
+        padding: '24px',
+        borderBottom: isLast ? 'none' : `1px solid ${C.cardBorder}`,
+        backgroundColor: focused ? 'rgba(59,130,246,0.02)' : 'transparent',
+        transition: 'background 0.3s ease',
+        display: 'flex', gap: 40, alignItems: 'flex-start'
+      }}
+    >
+      <div style={{ flex: '0 0 280px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon style={{ width: 14, height: 14, color: C.text }} />
+          </div>
+          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: C.text }}>{title}</h4>
+        </div>
+        <p style={{ margin: 0, fontSize: 13, color: C.muted, lineHeight: 1.5, paddingLeft: 38 }}>{desc}</p>
+      </div>
+      <div style={{ flex: 1, maxWidth: 500 }} onFocus={() => onFocus(id)} onBlur={() => onBlur()}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Minimal Input Wrapper (hoisted to preserve input focus) ─── */
+function MInput({ value, onChange, placeholder, type = 'text', maxLength }: any) {
+  return (
+    <input
+      type={type} value={value} onChange={onChange} placeholder={placeholder} maxLength={maxLength}
+      style={{
+        width: '100%', padding: '12px 16px', fontSize: 14, color: C.text,
+        backgroundColor: C.inputBg, border: `1px solid ${C.cardBorder}`, borderRadius: 10,
+        outline: 'none', transition: 'all 0.2s', fontFamily: 'inherit'
+      }}
+      onMouseEnter={e => { e.currentTarget.style.backgroundColor = C.inputHover; }}
+      onMouseLeave={e => { e.currentTarget.style.backgroundColor = C.inputBg; }}
+      onFocus={e => { e.currentTarget.style.backgroundColor = C.inputBg; e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.boxShadow = `0 0 0 3px rgba(59,130,246,0.15)`; }}
+      onBlur={e => { e.currentTarget.style.borderColor = C.cardBorder; e.currentTarget.style.boxShadow = 'none'; }}
+    />
+  );
+}
 
 export default function SettingsPage() {
   const supabase = createClient();
@@ -49,6 +95,7 @@ export default function SettingsPage() {
   const [pincode, setPincode] = useState('');
   const [gstin, setGstin] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
+  const [upiId, setUpiId] = useState('');
 
   const [users, setUsers] = useState<any[]>([]);
 
@@ -63,6 +110,7 @@ export default function SettingsPage() {
         setAddress(data.address || ''); setCity(data.city || '');
         setState(data.state || ''); setPincode(data.pincode || '');
         setGstin(data.gstin || ''); setLicenseNumber(data.license_number || '');
+        setUpiId(data.upi_id || '');
       }
 
       const { data: usersData } = await supabase
@@ -89,6 +137,7 @@ export default function SettingsPage() {
           name: name.trim(), owner_name: ownerName.trim(), phone: phone.trim() || null, email: email.trim() || null,
           address: address.trim() || null, city: city.trim() || null, state: state.trim() || null,
           pincode: pincode.trim() || null, gstin: gstin.trim().toUpperCase() || null, license_number: licenseNumber.trim() || null,
+          upi_id: upiId.trim() || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', pharmacyId!);
@@ -109,53 +158,6 @@ export default function SettingsPage() {
     { key: 'security' as const, label: 'Security & Auth', icon: Shield },
     { key: 'devices' as const, label: 'Sessions', icon: MonitorSmartphone },
   ];
-
-  /* ─── Vercel/Linear Style Setting Row ─── */
-  const SettingRow = ({ id, title, desc, icon: Icon, children, isLast = false }: any) => {
-    const focused = activeInput === id;
-    return (
-      <div 
-        style={{ 
-          padding: '24px', 
-          borderBottom: isLast ? 'none' : `1px solid ${C.cardBorder}`,
-          backgroundColor: focused ? 'rgba(59,130,246,0.02)' : 'transparent',
-          transition: 'background 0.3s ease',
-          display: 'flex', gap: 40, alignItems: 'flex-start'
-        }}
-      >
-        <div style={{ flex: '0 0 280px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon style={{ width: 14, height: 14, color: C.text }} />
-            </div>
-            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: C.text }}>{title}</h4>
-          </div>
-          <p style={{ margin: 0, fontSize: 13, color: C.muted, lineHeight: 1.5, paddingLeft: 38 }}>{desc}</p>
-        </div>
-        <div style={{ flex: 1, maxWidth: 500 }} onFocus={() => setActiveInput(id)} onBlur={() => setActiveInput(null)}>
-          {children}
-        </div>
-      </div>
-    );
-  };
-
-  /* ─── Minimal Input Wrapper ─── */
-  const MInput = ({ value, onChange, placeholder, type="text", maxLength }: any) => {
-    return (
-      <input
-        type={type} value={value} onChange={onChange} placeholder={placeholder} maxLength={maxLength}
-        style={{
-          width: '100%', padding: '12px 16px', fontSize: 14, color: C.text,
-          backgroundColor: C.inputBg, border: `1px solid ${C.cardBorder}`, borderRadius: 10,
-          outline: 'none', transition: 'all 0.2s', fontFamily: 'inherit'
-        }}
-        onMouseEnter={e => e.currentTarget.style.backgroundColor = C.inputHover}
-        onMouseLeave={e => e.currentTarget.style.backgroundColor = C.inputBg}
-        onFocus={e => { e.currentTarget.style.backgroundColor = C.inputBg; e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.boxShadow = `0 0 0 3px rgba(59,130,246,0.15)`; }}
-        onBlur={e => { e.currentTarget.style.borderColor = C.cardBorder; e.currentTarget.style.boxShadow = 'none'; }}
-      />
-    );
-  };
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
@@ -206,15 +208,15 @@ export default function SettingsPage() {
               </div>
 
               <div style={{ backgroundColor: C.card, border: `1px solid ${C.cardBorder}`, borderRadius: 16, overflow: 'hidden' }}>
-                <SettingRow id="name" title="Pharmacy Name *" desc="The official name of your store." icon={Building}>
+                <SettingRow id="name" focused={activeInput==='name'} onFocus={setActiveInput} onBlur={() => setActiveInput(null)} title="Pharmacy Name *" desc="The official name of your store." icon={Building}>
                   <MInput value={name} onChange={(e:any) => setName(e.target.value)} placeholder="Apex Health Pharmacy" />
                 </SettingRow>
 
-                <SettingRow id="owner" title="Owner Name" desc="Name of the proprietor." icon={User}>
+                <SettingRow id="owner" focused={activeInput==='owner'} onFocus={setActiveInput} onBlur={() => setActiveInput(null)} title="Owner Name" desc="Name of the proprietor." icon={User}>
                   <MInput value={ownerName} onChange={(e:any) => setOwnerName(e.target.value)} placeholder="Rahul Sharma" />
                 </SettingRow>
 
-                <SettingRow id="contact" title="Contact Details" desc="Primary phone number and support email." icon={Phone}>
+                <SettingRow id="contact" focused={activeInput==='contact'} onFocus={setActiveInput} onBlur={() => setActiveInput(null)} title="Contact Details" desc="Primary phone number and support email." icon={Phone}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div style={{ position: 'relative' }}>
                        <Phone style={{ position: 'absolute', left: 12, top: 12, width: 14, height: 14, color: C.muted }} />
@@ -227,14 +229,18 @@ export default function SettingsPage() {
                   </div>
                 </SettingRow>
 
-                <SettingRow id="legal" title="Tax & Legal" desc="GST registration and Official Drug License number." icon={ShieldCheck}>
+                <SettingRow id="legal" focused={activeInput==='legal'} onFocus={setActiveInput} onBlur={() => setActiveInput(null)} title="Tax & Legal" desc="GST registration and Official Drug License number." icon={ShieldCheck}>
                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <MInput value={gstin} onChange={(e:any) => setGstin(e.target.value.toUpperCase())} placeholder="GSTIN" maxLength={15} />
                     <MInput value={licenseNumber} onChange={(e:any) => setLicenseNumber(e.target.value.toUpperCase())} placeholder="License No." />
                   </div>
                 </SettingRow>
 
-                <SettingRow id="addr" title="Location" desc="Registered address of the pharmacy." icon={MapPin} isLast>
+                <SettingRow id="payment" focused={activeInput==='payment'} onFocus={setActiveInput} onBlur={() => setActiveInput(null)} title="Payments" desc="UPI ID to receive payments via QR code." icon={Wallet}>
+                   <MInput value={upiId} onChange={(e:any) => setUpiId(e.target.value)} placeholder="yourname@bank" />
+                </SettingRow>
+
+                <SettingRow id="addr" focused={activeInput==='addr'} onFocus={setActiveInput} onBlur={() => setActiveInput(null)} title="Location" desc="Registered address of the pharmacy." icon={MapPin} isLast>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <MInput value={address} onChange={(e:any) => setAddress(e.target.value)} placeholder="Building, Street, Landmark" />
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
@@ -339,7 +345,7 @@ export default function SettingsPage() {
                 <p style={{ margin: '6px 0 0', fontSize: 13, color: C.muted }}>Protect your workspace with additional security layers.</p>
               </div>
               <div style={{ backgroundColor: C.card, border: `1px solid ${C.cardBorder}`, borderRadius: 16, overflow: 'hidden' }}>
-                 <SettingRow id="2fa" title="Two-Factor Authentication" desc="Require a code from an authenticator app when logging in." icon={Fingerprint} isLast>
+                 <SettingRow id="2fa" focused={activeInput==='2fa'} onFocus={setActiveInput} onBlur={() => setActiveInput(null)} title="Two-Factor Authentication" desc="Require a code from an authenticator app when logging in." icon={Fingerprint} isLast>
                    <button disabled style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${C.cardBorder}`, backgroundColor: 'rgba(255,255,255,0.04)', color: C.muted, fontSize: 13, fontWeight: 600, cursor: 'not-allowed' }}>Enable (Coming Soon)</button>
                  </SettingRow>
               </div>

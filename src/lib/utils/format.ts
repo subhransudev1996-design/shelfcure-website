@@ -36,6 +36,20 @@ export function formatDate(
 }
 
 /**
+ * Format a date as a time string (e.g. "10:42 AM")
+ */
+export function formatTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '—';
+  return date.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+/**
  * Format a date as a relative time string (e.g. "2 hours ago")
  */
 export function formatRelativeTime(dateStr: string): string {

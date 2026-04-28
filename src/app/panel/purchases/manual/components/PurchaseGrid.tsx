@@ -1,398 +1,405 @@
-"use client";
+'use client';
 
-import { Trash2, Search, Check, Plus, Package } from 'lucide-react';
+import { Trash2, Search, Plus, PlusCircle, Check, FileSpreadsheet, X } from 'lucide-react';
 import { PurchaseLineItem } from './types';
-import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 const C = {
-  bg: '#020617',          
-  card: '#0B1121',        
+  card: '#0B1121',
   cardBorder: 'rgba(255,255,255,0.08)',
-  text: '#f8fafc', 
+  cardBorderUnlinked: 'rgba(245,158,11,0.35)',
+  text: '#f8fafc',
   muted: '#94a3b8',
-  primary: '#8b5cf6',     
+  primary: '#6366f1',
+  primaryLight: '#818cf8',
   danger: '#ef4444',
   success: '#10b981',
-  inputBg: 'rgba(255,255,255,0.02)',
+  warning: '#f59e0b',
+  inputBg: 'rgba(255,255,255,0.03)',
 };
 
-const mockMedicines = [
-  { id: '1', name: 'Dolo 650', barcode: '123456789', manufacturer: 'Micro Labs', sale_unit_mode: 'pack_only', units_per_pack: 1 },
-  { id: '2', name: 'Paracetamol 500mg', barcode: '987654321', manufacturer: 'Generic', sale_unit_mode: 'both', units_per_pack: 10 },
-  { id: '3', name: 'Amoxicillin 250mg', barcode: '456123789', manufacturer: 'Cipla', sale_unit_mode: 'pack_only', units_per_pack: 1 },
-];
-
-interface Props {
-  lines: PurchaseLineItem[];
-  onAddLine: (item: PurchaseLineItem) => void;
-  onRemoveLine: (id: string) => void;
+interface MedicineSearchHit {
+  id: string;
+  name: string;
+  manufacturer: string | null;
+  sale_unit_mode: string | null;
+  units_per_pack: number | null;
+  gst_rate: number | null;
+  barcode: string | null;
 }
 
-const emptyItem = (): PurchaseLineItem => ({
-  id: crypto.randomUUID(),
-  medicine_id: null,
-  medicine_name: '', 
-  batch_number: '', 
-  expiry_date: '', 
-  quantity: 0, 
-  free_quantity: 0, 
-  purchase_rate: 0, 
-  mrp: 0, 
-  selling_price: 0,
-  gst_percentage: 12, 
-  discount_percentage: 0,
-  sale_unit_mode: 'pack_only',
-  units_per_pack: 1,
-  barcode: '',
-  original_barcode: ''
-});
+interface Props {
+  pharmacyId: string | null;
+  lines: PurchaseLineItem[];
+  onUpdateLine: (id: string, patch: Partial<PurchaseLineItem>) => void;
+  onRemoveLine: (id: string) => void;
+  onAddEmpty: () => void;
+  onLinkMedicine: (lineId: string, med: MedicineSearchHit) => void;
+  onOpenAddMedicine: (lineId: string, name: string) => void;
+  csvSummary: { total: number; matched: number } | null;
+  onDismissCsvSummary: () => void;
+}
 
-export function PurchaseGrid({ lines, onAddLine, onRemoveLine }: Props) {
-  const [form, setForm] = useState<PurchaseLineItem>(emptyItem());
+const inputXs: React.CSSProperties = {
+  width: '100%', padding: '7px 9px', borderRadius: 8,
+  border: `1px solid ${C.cardBorder}`, background: C.inputBg, color: C.text,
+  fontSize: 12, outline: 'none', fontWeight: 600,
+};
+
+const labelXs: React.CSSProperties = {
+  display: 'block', fontSize: 9, fontWeight: 800, color: C.muted,
+  marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em',
+};
+
+export function PurchaseGrid({
+  pharmacyId, lines, onUpdateLine, onRemoveLine, onAddEmpty,
+  onLinkMedicine, onOpenAddMedicine, csvSummary, onDismissCsvSummary,
+}: Props) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* CSV Summary banner */}
+      {csvSummary && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 12,
+          padding: 14, background: 'rgba(16,185,129,0.08)',
+          border: '1px solid rgba(16,185,129,0.25)', borderRadius: 14,
+        }}>
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <FileSpreadsheet style={{ width: 14, height: 14, color: C.success }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: C.success }}>
+              CSV Imported · {csvSummary.total} items loaded
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 11, color: C.muted, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Check style={{ width: 11, height: 11, color: C.success }} />
+              {csvSummary.matched} auto-matched
+              {csvSummary.total - csvSummary.matched > 0 && (
+                <span style={{ color: C.warning }}>
+                  · {csvSummary.total - csvSummary.matched} need manual linking
+                </span>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={onDismissCsvSummary}
+            style={{ width: 26, height: 26, borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: 'none', color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <X style={{ width: 12, height: 12 }} />
+          </button>
+        </div>
+      )}
+
+      <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: C.text }}>
+        Items ({lines.length})
+      </h3>
+
+      {lines.map((line) => (
+        <LineItemCard
+          key={line.id}
+          pharmacyId={pharmacyId}
+          line={line}
+          onUpdate={onUpdateLine}
+          onRemove={onRemoveLine}
+          onLinkMedicine={onLinkMedicine}
+          onOpenAddMedicine={onOpenAddMedicine}
+        />
+      ))}
+
+      <button
+        onClick={onAddEmpty}
+        style={{
+          width: '100%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          padding: '14px',
+          background: 'transparent',
+          border: `2px dashed ${C.cardBorder}`,
+          borderRadius: 14, color: C.muted, fontSize: 13, fontWeight: 700,
+          cursor: 'pointer', transition: 'all 0.15s',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.primaryLight; e.currentTarget.style.color = C.primaryLight; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.cardBorder; e.currentTarget.style.color = C.muted; }}
+      >
+        <Plus style={{ width: 14, height: 14 }} />
+        Add Another Item
+      </button>
+    </div>
+  );
+}
+
+function LineItemCard({
+  pharmacyId, line, onUpdate, onRemove, onLinkMedicine, onOpenAddMedicine,
+}: {
+  pharmacyId: string | null;
+  line: PurchaseLineItem;
+  onUpdate: (id: string, patch: Partial<PurchaseLineItem>) => void;
+  onRemove: (id: string) => void;
+  onLinkMedicine: (lineId: string, med: MedicineSearchHit) => void;
+  onOpenAddMedicine: (lineId: string, name: string) => void;
+}) {
+  const supabase = createClient();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<MedicineSearchHit[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchTimer = useRef<NodeJS.Timeout | null>(null);
+  const searchWrapperRef = useRef<HTMLDivElement>(null);
 
-  const handleLink = (med: any) => {
-    setForm(prev => ({
-      ...prev,
-      medicine_id: med.id,
-      medicine_name: med.name,
-      barcode: med.barcode,
-      sale_unit_mode: med.sale_unit_mode,
-      units_per_pack: med.units_per_pack
-    }));
-    setSearchOpen(false);
-  };
-
-  const lineAmount = (l: PurchaseLineItem) => {
-    const base = l.purchase_rate * l.quantity;
-    return base - (base * l.discount_percentage) / 100;
-  };
-
-  const handleAdd = () => {
-    if (!form.medicine_name.trim()) {
-      toast.error("Please enter or select a medicine name.");
-      return;
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
     }
-    if (form.quantity <= 0) {
-      toast.error("Quantity must be greater than 0.");
-      return;
-    }
-    if (form.purchase_rate <= 0) {
-      toast.error("Please enter a valid purchase rate.");
-      return;
-    }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, []);
 
-    onAddLine({ ...form, id: crypto.randomUUID() });
-    setForm(emptyItem());
-  };
+  const doSearch = useCallback((q: string) => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (!pharmacyId || q.length < 2) { setSearchResults([]); return; }
+    setSearchLoading(true);
+    searchTimer.current = setTimeout(async () => {
+      const { data } = await supabase
+        .from('medicines')
+        .select('id, name, manufacturer, sale_unit_mode, units_per_pack, gst_rate, barcode')
+        .eq('pharmacy_id', pharmacyId)
+        .ilike('name', `%${q}%`)
+        .limit(10);
+      setSearchResults((data as MedicineSearchHit[]) || []);
+      setSearchLoading(false);
+    }, 200);
+  }, [pharmacyId, supabase]);
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '10px 12px',
-    borderRadius: 8,
-    border: `1px solid ${C.cardBorder}`,
-    backgroundColor: C.inputBg,
-    color: C.text,
-    fontSize: 13,
-    outline: 'none',
-    transition: 'all 0.2s',
-  };
+  const lineAmount = (() => {
+    const base = line.purchase_rate * line.quantity;
+    return base - (base * line.discount_percentage) / 100;
+  })();
 
-  const labelStyle: React.CSSProperties = {
-    display: 'block',
-    fontSize: 11,
-    fontWeight: 700,
-    color: C.muted,
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em'
-  };
+  const isLinked = !!line.medicine_id;
+  const isFlex = line.sale_unit_mode === 'both' && line.units_per_pack > 1;
+  const barcodeChanged = line.barcode.trim() !== line.original_barcode.trim();
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* ── ENTRY FORM ── */}
-      <div style={{ 
-        backgroundColor: C.card,
-        border: `1px solid ${C.cardBorder}`,
-        borderRadius: 16,
-        padding: 24,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-          <div style={{ padding: 6, backgroundColor: 'rgba(139, 92, 246, 0.1)', borderRadius: 8 }}>
-            <Plus size={16} color={C.primary} />
-          </div>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: C.text }}>Add Item to Invoice</h3>
+    <div style={{
+      background: C.card,
+      border: `1px solid ${isLinked ? C.cardBorder : C.cardBorderUnlinked}`,
+      borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10,
+    }}>
+      {/* Search row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div ref={searchWrapperRef} style={{ position: 'relative', flex: 1 }}>
+          <Search style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', width: 13, height: 13, color: isLinked ? C.success : C.muted, pointerEvents: 'none' }} />
+          <input
+            value={line.medicine_name}
+            onChange={(e) => {
+              onUpdate(line.id, { medicine_name: e.target.value, medicine_id: null });
+              setSearchOpen(true);
+              doSearch(e.target.value);
+            }}
+            onFocus={() => { if (line.medicine_name.length >= 2) { setSearchOpen(true); doSearch(line.medicine_name); } }}
+            placeholder="Search medicine..."
+            style={{
+              width: '100%', padding: '8px 10px 8px 28px', borderRadius: 9,
+              border: `1px solid ${isLinked ? 'rgba(16,185,129,0.4)' : C.cardBorder}`,
+              background: isLinked ? 'rgba(16,185,129,0.06)' : C.inputBg,
+              color: C.text, fontSize: 13, outline: 'none', fontWeight: 600,
+            }}
+          />
+          {searchOpen && (searchResults.length > 0 || searchLoading || line.medicine_name.length >= 2) && (
+            <div style={{
+              position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4,
+              background: '#0f172a', border: `1px solid ${C.cardBorder}`,
+              borderRadius: 10, overflow: 'hidden', zIndex: 50,
+              boxShadow: '0 14px 30px rgba(0,0,0,0.5)', maxHeight: 280, overflowY: 'auto',
+            }}>
+              {searchResults.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => {
+                    onLinkMedicine(line.id, m);
+                    setSearchOpen(false);
+                    setSearchResults([]);
+                  }}
+                  style={{
+                    width: '100%', textAlign: 'left', padding: '8px 12px',
+                    background: 'transparent', border: 'none',
+                    borderBottom: `1px solid ${C.cardBorder}`,
+                    cursor: 'pointer', color: C.text,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  <span style={{ fontSize: 12, fontWeight: 700 }}>{m.name}</span>
+                  {m.manufacturer && <span style={{ fontSize: 10, color: C.muted, marginLeft: 8 }}>{m.manufacturer}</span>}
+                </button>
+              ))}
+              {!searchLoading && searchResults.length === 0 && line.medicine_name.length >= 2 && (
+                <p style={{ padding: '10px 12px', margin: 0, fontSize: 11, fontStyle: 'italic', color: C.muted, borderBottom: `1px solid ${C.cardBorder}` }}>
+                  No medicine found for &quot;{line.medicine_name}&quot;
+                </p>
+              )}
+              <button
+                onClick={() => { onOpenAddMedicine(line.id, line.medicine_name); setSearchOpen(false); }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '8px 12px', background: 'rgba(99,102,241,0.08)',
+                  border: 'none', color: C.primaryLight, fontSize: 11, fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                <Plus style={{ width: 12, height: 12 }} />
+                Add &quot;{line.medicine_name || 'new medicine'}&quot; as new medicine
+              </button>
+            </div>
+          )}
         </div>
+        <button
+          onClick={() => onRemove(line.id)}
+          style={{
+            width: 32, height: 32, borderRadius: 8, background: 'transparent',
+            border: 'none', color: C.muted, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = C.danger; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.muted; }}
+          title="Remove line"
+        >
+          <Trash2 style={{ width: 14, height: 14 }} />
+        </button>
+      </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Row 1: Product & Barcode */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-            <div style={{ position: 'relative' }}>
-              <label style={labelStyle}>Product Name</label>
-              <div style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-                  {form.medicine_id ? <Check size={16} color={C.success} /> : <Search size={16} color={C.muted} />}
-                </div>
-                <input 
-                  value={form.medicine_name} 
-                  onChange={e => {
-                    setForm(prev => ({ ...prev, medicine_name: e.target.value, medicine_id: null }));
-                    if (e.target.value.length > 1) setSearchOpen(true);
-                  }} 
-                  onFocus={() => { if (form.medicine_name.length > 1) setSearchOpen(true); }}
-                  placeholder="Search for a medicine..." 
-                  style={{ 
-                    ...inputStyle, 
-                    paddingLeft: 36, 
-                    borderColor: form.medicine_id ? 'rgba(16, 185, 129, 0.3)' : (form.medicine_name ? C.cardBorder : 'rgba(245, 158, 11, 0.3)'), 
-                  }} 
-                />
-                {searchOpen && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, width: '100%', marginTop: 4, backgroundColor: '#0f172a', border: `1px solid ${C.cardBorder}`, borderRadius: 8, overflow: 'hidden', zIndex: 50, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}>
-                    {mockMedicines.map(m => (
-                      <div 
-                        key={m.id} 
-                        onClick={() => handleLink(m)}
-                        style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: `1px solid ${C.cardBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
-                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                      >
-                        <div>
-                          <div style={{ fontSize: 13, color: C.text, fontWeight: 700 }}>{m.name}</div>
-                          <div style={{ fontSize: 11, color: C.muted }}>{m.manufacturer}</div>
-                        </div>
-                        <div style={{ fontSize: 11, color: C.muted, backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4 }}>
-                          {m.sale_unit_mode === 'pack_only' ? 'Pack' : 'Loose'}
-                        </div>
-                      </div>
-                    ))}
-                    <div 
-                      onClick={() => setSearchOpen(false)}
-                      style={{ padding: '8px', textAlign: 'center', fontSize: 12, color: C.primary, cursor: 'pointer', fontWeight: 600, backgroundColor: 'rgba(139, 92, 246, 0.05)' }}
-                    >
-                      + Add "{form.medicine_name}" as New
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div>
-              <label style={labelStyle}>Barcode</label>
-              <input 
-                value={form.barcode} 
-                onChange={e => setForm(prev => ({ ...prev, barcode: e.target.value }))} 
-                placeholder="Scan or type" 
-                style={inputStyle} 
-              />
-            </div>
-          </div>
+      {/* Inline "Add as New Medicine" button (when not linked) */}
+      {!isLinked && (
+        <button
+          onClick={() => onOpenAddMedicine(line.id, line.medicine_name || '')}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            padding: '8px 12px', background: C.primary, border: 'none',
+            color: '#fff', fontSize: 12, fontWeight: 800, borderRadius: 9, cursor: 'pointer',
+          }}
+        >
+          <PlusCircle style={{ width: 13, height: 13 }} />
+          {line.medicine_name ? `Add "${line.medicine_name}" as New Medicine` : 'Add as New Medicine'}
+        </button>
+      )}
 
-          {/* Row 2: Batch, Expiry, Qty, Free */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 16 }}>
-            <div>
-              <label style={labelStyle}>Batch No.</label>
-              <input 
-                value={form.batch_number} 
-                onChange={e => setForm(prev => ({ ...prev, batch_number: e.target.value.toUpperCase() }))} 
-                placeholder="e.g. BATCH123" 
-                style={inputStyle} 
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Expiry (MM/YYYY)</label>
-              <input 
-                type="month" 
-                value={form.expiry_date?.slice(0, 7) || ''} 
-                onChange={e => setForm(prev => ({ ...prev, expiry_date: e.target.value ? `${e.target.value}-01` : '' }))} 
-                style={{ ...inputStyle, colorScheme: 'dark' }} 
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Quantity</label>
-              <input 
-                type="number" 
-                min="0"
-                value={form.quantity || ''} 
-                onChange={e => { const val = parseInt(e.target.value); setForm(prev => ({ ...prev, quantity: isNaN(val) ? 0 : val })); }} 
-                placeholder="0"
-                style={inputStyle} 
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Free Qty</label>
-              <input 
-                type="number" 
-                min="0"
-                value={form.free_quantity || ''} 
-                onChange={e => { const val = parseInt(e.target.value); setForm(prev => ({ ...prev, free_quantity: isNaN(val) ? 0 : val })); }} 
-                placeholder="0"
-                style={inputStyle} 
-              />
-            </div>
-          </div>
+      {/* Numeric row 1: Qty, Free, PTR, MRP */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+        <div>
+          <label style={labelXs}>{isFlex ? 'Qty (Strips)' : 'Qty'}</label>
+          <input
+            type="number" min={0}
+            value={line.quantity || ''}
+            onChange={(e) => onUpdate(line.id, { quantity: parseFloat(e.target.value) || 0 })}
+            style={inputXs}
+          />
+        </div>
+        <div>
+          <label style={labelXs}>Free Qty</label>
+          <input
+            type="number" min={0}
+            value={line.free_quantity || ''}
+            onChange={(e) => onUpdate(line.id, { free_quantity: parseFloat(e.target.value) || 0 })}
+            style={inputXs}
+          />
+        </div>
+        <div>
+          <label style={labelXs}>Purchase Rate</label>
+          <input
+            type="number" step="0.01" min={0}
+            value={line.purchase_rate || ''}
+            onChange={(e) => onUpdate(line.id, { purchase_rate: parseFloat(e.target.value) || 0 })}
+            style={inputXs}
+          />
+        </div>
+        <div>
+          <label style={labelXs}>MRP</label>
+          <input
+            type="number" step="0.01" min={0}
+            value={line.mrp || ''}
+            onChange={(e) => onUpdate(line.id, { mrp: parseFloat(e.target.value) || 0 })}
+            style={inputXs}
+          />
+        </div>
+      </div>
 
-          {/* Row 3: Rates & Pricing */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 16 }}>
-            <div>
-              <label style={labelStyle}>PTR (₹)</label>
-              <input 
-                type="number" step="0.01" min="0"
-                value={form.purchase_rate || ''} 
-                onChange={e => { const val = parseFloat(e.target.value); setForm(prev => ({ ...prev, purchase_rate: isNaN(val) ? 0 : val })); }} 
-                placeholder="0.00" style={inputStyle} 
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>MRP (₹)</label>
-              <input 
-                type="number" step="0.01" min="0"
-                value={form.mrp || ''} 
-                onChange={e => { const val = parseFloat(e.target.value); setForm(prev => ({ ...prev, mrp: isNaN(val) ? 0 : val })); }} 
-                placeholder="0.00" style={inputStyle} 
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Sell Price (₹)</label>
-              <input 
-                type="number" step="0.01" min="0"
-                value={form.selling_price || ''} 
-                onChange={e => { const val = parseFloat(e.target.value); setForm(prev => ({ ...prev, selling_price: isNaN(val) ? 0 : val })); }} 
-                placeholder="0.00" style={inputStyle} 
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>GST %</label>
-              <input 
-                type="number" step="0.01" min="0" max="100"
-                value={form.gst_percentage || ''} 
-                onChange={e => { const val = parseFloat(e.target.value); setForm(prev => ({ ...prev, gst_percentage: isNaN(val) ? 0 : val })); }} 
-                placeholder="12" style={inputStyle} 
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Discount %</label>
-              <input 
-                type="number" step="0.01" min="0" max="100"
-                value={form.discount_percentage || ''} 
-                onChange={e => { const val = parseFloat(e.target.value); setForm(prev => ({ ...prev, discount_percentage: isNaN(val) ? 0 : val })); }} 
-                placeholder="0" style={inputStyle} 
-              />
-            </div>
-          </div>
-
-          <div style={{ marginTop: 8 }}>
-            <button 
-              onClick={handleAdd}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                color: C.primary,
-                border: `1px solid rgba(139, 92, 246, 0.2)`,
-                borderRadius: 10,
-                fontWeight: 700,
-                fontSize: 14,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8
-              }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(139, 92, 246, 0.15)'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(139, 92, 246, 0.1)'}
-            >
-              <Check size={16} /> Add to Invoice
-            </button>
+      {/* Numeric row 2: Sell Price, GST%, Disc%, Amount */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+        <div>
+          <label style={labelXs}>Sell Price</label>
+          <input
+            type="number" step="0.01" min={0}
+            value={line.selling_price || ''}
+            onChange={(e) => onUpdate(line.id, { selling_price: parseFloat(e.target.value) || 0 })}
+            style={inputXs}
+          />
+        </div>
+        <div>
+          <label style={labelXs}>GST %</label>
+          <input
+            type="number" step="0.01" min={0} max={100}
+            value={line.gst_percentage || ''}
+            onChange={(e) => onUpdate(line.id, { gst_percentage: parseFloat(e.target.value) || 0 })}
+            style={inputXs}
+          />
+        </div>
+        <div>
+          <label style={labelXs}>Disc %</label>
+          <input
+            type="number" step="0.01" min={0} max={100}
+            value={line.discount_percentage || ''}
+            onChange={(e) => onUpdate(line.id, { discount_percentage: parseFloat(e.target.value) || 0 })}
+            style={inputXs}
+          />
+        </div>
+        <div>
+          <label style={labelXs}>Amount</label>
+          <div style={{
+            padding: '7px 9px', borderRadius: 8,
+            border: `1px solid rgba(99,102,241,0.25)`,
+            background: 'rgba(99,102,241,0.1)',
+            color: C.primaryLight, fontSize: 12, fontWeight: 800,
+          }}>
+            ₹{lineAmount.toFixed(2)}
           </div>
         </div>
       </div>
 
-      {/* ── ADDED ITEMS LIST ── */}
-      <div>
-        <h3 style={{ margin: '0 0 16px', fontSize: 14, fontWeight: 700, color: C.text, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          Added Items
-          <span style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 999, fontSize: 11 }}>
-            {lines.filter(l => l.medicine_name).length} items
-          </span>
-        </h3>
-
-        {lines.filter(l => l.medicine_name).length === 0 ? (
-          <div style={{ 
-            padding: 40, 
-            textAlign: 'center', 
-            backgroundColor: 'rgba(255,255,255,0.01)', 
-            border: `1px dashed ${C.cardBorder}`, 
-            borderRadius: 12 
-          }}>
-            <Package size={32} color={C.muted} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-            <p style={{ margin: 0, color: C.muted, fontSize: 14, fontWeight: 500 }}>No items added yet.</p>
-            <p style={{ margin: '4px 0 0', color: C.muted, fontSize: 12 }}>Fill the form above to add medicines to this invoice.</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {lines.filter(l => l.medicine_name).map((l, idx) => (
-              <div key={l.id} style={{ 
-                backgroundColor: C.card,
-                border: `1px solid ${C.cardBorder}`,
-                borderRadius: 12,
-                padding: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 16
-              }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>{idx + 1}.</span>
-                    <h4 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: C.text }}>{l.medicine_name}</h4>
-                    {!l.medicine_id && (
-                      <span style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>NEW</span>
-                    )}
-                  </div>
-                  
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 24px', fontSize: 12, color: C.muted, marginTop: 8 }}>
-                    <div style={{ display: 'flex', gap: 6 }}><span style={{ fontWeight: 600 }}>Batch:</span> <span style={{ color: C.text }}>{l.batch_number || 'N/A'}</span></div>
-                    <div style={{ display: 'flex', gap: 6 }}><span style={{ fontWeight: 600 }}>Exp:</span> <span style={{ color: C.text }}>{l.expiry_date ? l.expiry_date.slice(0,7) : 'N/A'}</span></div>
-                    <div style={{ display: 'flex', gap: 6 }}><span style={{ fontWeight: 600 }}>Qty:</span> <span style={{ color: C.text }}>{l.quantity}</span> {l.free_quantity > 0 && <span style={{ color: C.success }}>(+{l.free_quantity} Free)</span>}</div>
-                    <div style={{ display: 'flex', gap: 6 }}><span style={{ fontWeight: 600 }}>PTR:</span> <span style={{ color: C.text }}>₹{l.purchase_rate.toFixed(2)}</span></div>
-                    <div style={{ display: 'flex', gap: 6 }}><span style={{ fontWeight: 600 }}>MRP:</span> <span style={{ color: C.text }}>₹{l.mrp.toFixed(2)}</span></div>
-                    <div style={{ display: 'flex', gap: 6 }}><span style={{ fontWeight: 600 }}>GST:</span> <span style={{ color: C.text }}>{l.gst_percentage}%</span></div>
-                    {l.discount_percentage > 0 && <div style={{ display: 'flex', gap: 6 }}><span style={{ fontWeight: 600 }}>Disc:</span> <span style={{ color: C.success }}>{l.discount_percentage}%</span></div>}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: C.primary }}>
-                    ₹{lineAmount(l).toFixed(2)}
-                  </div>
-                  <button 
-                    onClick={() => onRemoveLine(l.id)} 
-                    style={{ 
-                      padding: '6px 10px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: 4,
-                      backgroundColor: 'transparent', 
-                      border: `1px solid rgba(239, 68, 68, 0.2)`, 
-                      color: C.danger, 
-                      borderRadius: 6, 
-                      fontSize: 11,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }} 
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'} 
-                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <Trash2 size={12} /> Remove
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Batch + Expiry + Barcode */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        <div>
+          <label style={labelXs}>Batch Number</label>
+          <input
+            value={line.batch_number}
+            onChange={(e) => onUpdate(line.id, { batch_number: e.target.value.toUpperCase() })}
+            placeholder="e.g. ABC123"
+            style={inputXs}
+          />
+        </div>
+        <div>
+          <label style={labelXs}>Expiry Date</label>
+          <input
+            type="month"
+            value={line.expiry_date?.slice(0, 7) || ''}
+            onChange={(e) => onUpdate(line.id, { expiry_date: e.target.value ? `${e.target.value}-01` : '' })}
+            style={{ ...inputXs, colorScheme: 'dark' }}
+          />
+        </div>
+        <div>
+          <label style={labelXs}>Barcode</label>
+          <input
+            value={line.barcode}
+            onChange={(e) => onUpdate(line.id, { barcode: e.target.value })}
+            placeholder="Scan or type barcode"
+            style={{
+              ...inputXs,
+              borderColor: barcodeChanged && line.barcode ? 'rgba(245,158,11,0.4)' : C.cardBorder,
+              background: barcodeChanged && line.barcode ? 'rgba(245,158,11,0.07)' : C.inputBg,
+            }}
+          />
+        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import React from "react";
 
 export default function PrivacyPolicy() {
   return (
-    <div style={{ paddingTop: "8rem", paddingBottom: "5rem", background: "white", minHeight: "100vh" }}>
+    <div style={{ paddingTop: "6rem", paddingBottom: "3rem", background: "white", minHeight: "100vh" }}>
       <div className="section-container" style={{ maxWidth: "800px", margin: "0 auto" }}>
         <h1 style={{ fontSize: "2.5rem", fontWeight: 800, marginBottom: "1rem", color: "var(--color-on-surface)" }}>Privacy Policy</h1>
         <p style={{ color: "var(--color-outline)", marginBottom: "3rem", fontSize: "0.9rem" }}>Last Updated: October 2024</p>

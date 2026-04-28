@@ -20,7 +20,7 @@ const C = {
 };
 
 interface PurchaseOrder {
-  id: number;
+  id: string;
   supplier_name: string;
   order_date: string;
   status: string;
@@ -51,25 +51,41 @@ export default function PurchaseOrders() {
           .select(`
             id,
             order_date,
+            created_at,
             status,
-            total_items,
             suppliers ( name )
           `)
           .eq("pharmacy_id", pharmacyId)
           .in("status", ["pending", "draft", "requested"])
-          .order("order_date", { ascending: false });
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        if (data) {
-          const mapped = data.map((o: any) => ({
+        if (data && data.length > 0) {
+          // Item counts aren't reliably written to purchase_orders.total_items,
+          // so compute them by reading purchase_order_items for these orders.
+          const orderIds = data.map((o: any) => o.id);
+          const { data: itemRows } = await supabase
+            .from('purchase_order_items')
+            .select('purchase_order_id, requested_quantity')
+            .in('purchase_order_id', orderIds);
+
+          const counts = new Map<string, number>();
+          for (const r of itemRows || []) {
+            const id = (r as any).purchase_order_id as string;
+            counts.set(id, (counts.get(id) || 0) + 1);
+          }
+
+          const mapped: PurchaseOrder[] = data.map((o: any) => ({
             id: o.id,
             supplier_name: o.suppliers?.name || "Unknown Supplier",
-            order_date: o.order_date,
+            order_date: o.order_date || o.created_at,
             status: o.status,
-            total_items: o.total_items,
+            total_items: counts.get(o.id) || 0,
           }));
           setOrders(mapped);
+        } else {
+          setOrders([]);
         }
       } catch (err: any) {
         console.error("Failed to load purchase orders", err);
@@ -82,10 +98,10 @@ export default function PurchaseOrders() {
     fetchOrders();
   }, [pharmacyId, supabase]);
 
-  const filtered = orders.filter((o) => 
-    o.supplier_name.toLowerCase().includes(search.toLowerCase()) || 
-    o.id.toString().includes(search)
-  );
+  const filtered = orders.filter((o) => {
+    const q = search.toLowerCase();
+    return o.supplier_name.toLowerCase().includes(q) || o.id.toLowerCase().includes(q);
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginTop: -10 }} className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
@@ -168,16 +184,16 @@ export default function PurchaseOrders() {
                   }}>
                     {order.status}
                   </span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>
-                    PO-{order.id.toString().padStart(4, '0')}
+                  <span style={{ fontSize: 12, fontWeight: 700, color: C.muted, fontFamily: 'monospace' }}>
+                    PO-{order.id.slice(0, 8).toUpperCase()}
                   </span>
                 </div>
                 <h3 style={{ margin: '0 0 4px', fontWeight: 900, fontSize: 18, color: C.text, lineHeight: 1.2 }}>
                   {order.supplier_name}
                 </h3>
                 <div style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>
-                  <p style={{ margin: '4px 0' }}>Items Requested: {order.total_items}</p>
-                  <p style={{ margin: '4px 0' }}>Ordered on: {new Date(order.order_date).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  <p style={{ margin: '4px 0' }}>Items Requested: <b style={{ color: C.text }}>{order.total_items}</b></p>
+                  <p style={{ margin: '4px 0' }}>Ordered on: {order.order_date ? new Date(order.order_date).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</p>
                 </div>
               </div>
               <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.cardBorder}` }}>

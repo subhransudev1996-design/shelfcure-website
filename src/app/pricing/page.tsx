@@ -167,6 +167,7 @@ export default function PricingPage() {
       {/* ═══════════════ HERO SECTION ═══════════════ */}
       <section
         ref={hero.ref}
+        className="pricing-hero-section"
         style={{
           paddingTop: "160px", paddingBottom: "5rem",
           position: "relative",
@@ -256,15 +257,10 @@ export default function PricingPage() {
 
           {/* Plan toggle */}
           <div
-            className={hero.inView ? "animate-fade-in-up delay-300" : "opacity-0"}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: "1rem",
-              padding: "0.4rem",
-              background: "rgba(255,255,255,0.06)", backdropFilter: "blur(16px)",
-              borderRadius: "var(--radius-full)", border: "1px solid rgba(255,255,255,0.08)",
-            }}
+            className={`plan-toggle-wrap ${hero.inView ? "animate-fade-in-up delay-300" : "opacity-0"}`}
           >
             <button
+              className="plan-toggle-btn"
               onClick={() => setHighlightLifetime(false)}
               style={{
                 padding: "0.7rem 2rem", borderRadius: "var(--radius-full)",
@@ -278,6 +274,7 @@ export default function PricingPage() {
               Annual
             </button>
             <button
+              className="plan-toggle-btn"
               onClick={() => setHighlightLifetime(true)}
               style={{
                 padding: "0.7rem 2rem", borderRadius: "var(--radius-full)",
@@ -305,22 +302,19 @@ export default function PricingPage() {
       <section
         ref={cards.ref}
         style={{
-          padding: "0 0 6rem",
+          padding: "0 0 3.5rem",
           background: "linear-gradient(180deg, #1a1640, white 35%)",
           position: "relative", zIndex: 20,
         }}
       >
         <div className="section-container">
-          <div className="pricing-grid" style={{
-            display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem",
-            maxWidth: "1000px", margin: "0 auto",
-          }}>
+          <div className="pricing-grid">
 
             {/* ── ANNUAL CARD ── */}
             <div
-              className={cards.inView ? "animate-fade-in-up" : "opacity-0"}
+              className={`pricing-card-annual ${cards.inView ? "animate-fade-in-up" : "opacity-0"}`}
               style={{
-                background: "white", borderRadius: "2rem", padding: "3rem",
+                background: "white", borderRadius: "2rem",
                 border: !highlightLifetime ? "2px solid #6366f1" : "1px solid rgba(0,0,0,0.06)",
                 boxShadow: !highlightLifetime ? "0 30px 60px rgba(99,102,241,0.12)" : "0 20px 40px rgba(0,0,0,0.03)",
                 display: "flex", flexDirection: "column",
@@ -357,7 +351,7 @@ export default function PricingPage() {
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem" }}>
                   <span style={{ fontSize: "1.5rem", fontWeight: 600, color: "#94a3b8" }}>₹</span>
-                  <span style={{
+                  <span className="price-amount" style={{
                     fontSize: "3.5rem", fontWeight: 800, color: "#0f172a",
                     fontFamily: "var(--font-display)", lineHeight: 1,
                   }}>4,000</span>
@@ -371,7 +365,7 @@ export default function PricingPage() {
               {/* All 7 modules */}
               <div style={{ marginBottom: "1.5rem", padding: "1.25rem", background: "#f8fafc", borderRadius: "1rem", border: "1px solid rgba(99,102,241,0.08)" }}>
                 <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#6366f1", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.875rem" }}>All 7 modules included</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                <div className="module-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                   {["Smart Billing", "Inventory Control", "GST & Compliance", "Reports & Profit", "Customer & Credit", "Supplier Management", "Promotions"].map(m => (
                     <div key={m} style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.78rem", color: "#475569", fontWeight: 500 }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
@@ -415,10 +409,10 @@ export default function PricingPage() {
 
             {/* ── LIFETIME CARD ── */}
             <div
-              className={cards.inView ? "animate-fade-in-up delay-100" : "opacity-0"}
+              className={`pricing-card-lifetime ${cards.inView ? "animate-fade-in-up delay-100" : "opacity-0"}`}
               style={{
                 background: "linear-gradient(135deg, #1e1b4b, #312e81)",
-                borderRadius: "2rem", padding: "3rem", color: "white",
+                borderRadius: "2rem", color: "white",
                 position: "relative", overflow: "hidden",
                 boxShadow: highlightLifetime ? "0 30px 60px rgba(99,102,241,0.25)" : "0 20px 40px rgba(99,102,241,0.1)",
                 display: "flex", flexDirection: "column",
@@ -464,7 +458,7 @@ export default function PricingPage() {
 
                 <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem" }}>
                   <span style={{ fontSize: "1.5rem", fontWeight: 600, color: "#a5b4fc" }}>₹</span>
-                  <span style={{
+                  <span className="price-amount" style={{
                     fontSize: "3.5rem", fontWeight: 800,
                     fontFamily: "var(--font-display)", lineHeight: 1,
                   }}>8,000</span>
@@ -501,7 +495,7 @@ export default function PricingPage() {
               {/* All 7 modules */}
               <div style={{ marginBottom: "1.5rem", padding: "1.25rem", background: "rgba(255,255,255,0.05)", borderRadius: "1rem", border: "1px solid rgba(165,180,252,0.15)", position: "relative", zIndex: 1 }}>
                 <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#a5b4fc", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.875rem" }}>All 7 modules included</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                <div className="module-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                   {["Smart Billing", "Inventory Control", "GST & Compliance", "Reports & Profit", "Customer & Credit", "Supplier Management", "Promotions"].map(m => (
                     <div key={m} style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.78rem", color: "rgba(255,255,255,0.75)", fontWeight: 500 }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
@@ -544,7 +538,7 @@ export default function PricingPage() {
 
           {/* Money-back guarantee */}
           <div
-            className={cards.inView ? "animate-fade-in-up delay-200" : "opacity-0"}
+            className={`guarantee-row ${cards.inView ? "animate-fade-in-up delay-200" : "opacity-0"}`}
             style={{
               textAlign: "center", marginTop: "2.5rem",
               display: "flex", alignItems: "center", justifyContent: "center", gap: "0.6rem",
@@ -567,13 +561,10 @@ export default function PricingPage() {
       {/* ═══════════════ TRUST STATS ═══════════════ */}
       <section
         ref={trustSection.ref}
-        style={{ padding: "5rem 0", background: "white" }}
+        style={{ padding: "3rem 0", background: "white" }}
       >
         <div className="section-container">
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2rem",
-            maxWidth: "800px", margin: "0 auto",
-          }}>
+          <div className="trust-stats-grid">
             {[
               { value: `${pharmacies.toLocaleString()}+`, label: "Pharmacies Trust Us", icon: Icons.store },
               { value: `${uptime}.9%`, label: "Uptime Record", icon: Icons.zap },
@@ -613,7 +604,7 @@ export default function PricingPage() {
       {/* ═══════════════ DETAILED COMPARISON TABLE ═══════════════ */}
       <section
         ref={comp.ref}
-        style={{ padding: "7rem 0", background: "#f8fafc" }}
+        style={{ padding: "4rem 0", background: "#f8fafc" }}
       >
         <div className="section-container" style={{ maxWidth: "900px" }}>
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
@@ -639,12 +630,12 @@ export default function PricingPage() {
           </div>
 
           <div
-            className={comp.inView ? "animate-fade-in-up delay-200" : "opacity-0"}
-            style={{
-              background: "white", borderRadius: "2rem", overflow: "hidden",
-              boxShadow: "0 20px 50px rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.04)",
-            }}
+            className={`comparison-table-wrap ${comp.inView ? "animate-fade-in-up delay-200" : "opacity-0"}`}
           >
+          <div className="comparison-table-inner" style={{
+            background: "white", borderRadius: "2rem", overflow: "hidden",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.04)",
+          }}>
             {/* Header */}
             <div style={{
               display: "grid", gridTemplateColumns: "1.6fr 1fr 1fr",
@@ -686,13 +677,14 @@ export default function PricingPage() {
               </div>
             ))}
           </div>
+          </div>
         </div>
       </section>
 
       {/* ═══════════════ FAQ ACCORDION ═══════════════ */}
       <section
         ref={faq.ref}
-        style={{ padding: "7rem 0", background: "white" }}
+        style={{ padding: "4rem 0", background: "white" }}
       >
         <div className="section-container" style={{ maxWidth: "800px" }}>
           <div style={{ textAlign: "center", marginBottom: "4rem" }}>
@@ -767,14 +759,10 @@ export default function PricingPage() {
       {/* ═══════════════ FINAL CTA ═══════════════ */}
       <section
         ref={cta.ref}
-        style={{ padding: "6rem 0 8rem", background: "#f8fafc" }}
+        style={{ padding: "3.5rem 0 4rem", background: "#f8fafc" }}
       >
         <div className="section-container">
-          <div style={{
-            background: "linear-gradient(135deg, #0c0a1f 0%, #1a1640 50%, #312e81 100%)",
-            borderRadius: "3rem", padding: "5rem 3rem",
-            textAlign: "center", position: "relative", overflow: "hidden",
-          }}>
+          <div className="cta-inner">
             {/* Orbs */}
             <div className="animate-float" style={{
               position: "absolute", top: "-50%", left: "-10%", width: 400, height: 400,
@@ -850,18 +838,147 @@ export default function PricingPage() {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.5; transform: scale(1.4); }
         }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+
+        /* ── PRICING CARDS ── */
+        .pricing-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2rem;
+          max-width: 1000px;
+          margin: 0 auto;
+        }
+
+        /* ── COMPARISON TABLE ── */
+        .comparison-table-wrap {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        .comparison-table-inner {
+          min-width: 520px;
+        }
+
+        /* ── TRUST STATS ── */
+        .trust-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 2rem;
+          max-width: 800px;
+          margin: 0 auto;
+        }
+
+        /* ── HERO TOGGLE ── */
+        .plan-toggle-wrap {
+          display: inline-flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 0.4rem;
+          background: rgba(255,255,255,0.06);
+          backdrop-filter: blur(16px);
+          border-radius: var(--radius-full);
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        /* ── CTA INNER ── */
+        .cta-inner {
+          background: linear-gradient(135deg, #0c0a1f 0%, #1a1640 50%, #312e81 100%);
+          border-radius: 3rem;
+          padding: 5rem 3rem;
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+        }
+
+        /* ── CARD PADDING ── */
+        .pricing-card-annual {
+          padding: 3rem;
+        }
+        .pricing-card-lifetime {
+          padding: 3rem;
+        }
+
+        /* ════════════ TABLET ════════════ */
+        @media (max-width: 900px) {
+          .pricing-grid {
+            gap: 1.5rem;
+          }
+        }
+
+        /* ════════════ MOBILE ════════════ */
         @media (max-width: 768px) {
+          /* Hero */
+          .pricing-hero-section {
+            padding-top: 110px !important;
+            padding-bottom: 3rem !important;
+          }
+          .plan-toggle-wrap {
+            gap: 0.5rem;
+          }
+
+          /* Cards stack */
           .pricing-grid {
             grid-template-columns: 1fr !important;
-            gap: 2rem !important;
+            gap: 1.5rem !important;
           }
-          div[style*="grid-template-columns: repeat(3"] {
+          .pricing-card-annual,
+          .pricing-card-lifetime {
+            padding: 1.75rem !important;
+            border-radius: 1.5rem !important;
+            transform: none !important;
+          }
+
+          /* Module grid inside cards → 1 col */
+          .module-grid {
             grid-template-columns: 1fr !important;
           }
-          div[style*="grid-template-columns: 1.6fr"] {
-            grid-template-columns: 1.6fr 1fr 1fr !important;
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
+
+          /* Trust stats → 1 col */
+          .trust-stats-grid {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+          }
+
+          /* Comparison → scroll */
+          .comparison-table-wrap {
+            border-radius: 1.25rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.04);
+          }
+
+          /* CTA */
+          .cta-inner {
+            padding: 3rem 1.5rem !important;
+            border-radius: 1.75rem !important;
+          }
+
+          /* Guarantee row wrap */
+          .guarantee-row {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.4rem;
+          }
+        }
+
+        /* ════════════ SMALL MOBILE ════════════ */
+        @media (max-width: 480px) {
+          .pricing-hero-section {
+            padding-top: 90px !important;
+          }
+          .plan-toggle-btn {
+            padding: 0.6rem 1.2rem !important;
+            font-size: 0.85rem !important;
+          }
+          .price-amount {
+            font-size: 2.8rem !important;
+          }
+          .cta-inner {
+            padding: 2.5rem 1.25rem !important;
+          }
+          .trust-stats-grid {
+            grid-template-columns: 1fr 1fr !important;
           }
         }
       `}</style>

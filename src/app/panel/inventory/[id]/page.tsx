@@ -10,7 +10,7 @@ import {
   ArrowLeft, Loader2, Package2, AlertTriangle, Clock,
   Layers, IndianRupee, BarChart3, Plus,
   Edit2, RotateCcw, RefreshCw, X, Save, Truck, CheckCircle2,
-  ArrowLeftRight, Ban, Unlock,
+  ArrowLeftRight, Ban, Unlock, MapPin,
 } from 'lucide-react';
 
 /* ─── Types ─────────────────────────────────────────────────── */
@@ -22,11 +22,14 @@ interface MedicineDetail {
   sale_unit_mode?: 'pack' | 'both';
   units_per_pack?: number;
   pack_unit?: string | null;
+  rack_location?: string | null;
+  barcode?: string | null;
 }
 interface Batch {
   id: string; batch_number: string; expiry_date: string;
   stock_quantity: number; purchase_price: number; mrp: number;
   created_at: string;
+  challan_id?: string | null;
 }
 interface Supplier { id: string; name: string; phone: string | null; }
 
@@ -85,6 +88,68 @@ function InfoRow({ label, value, accent }: { label: string; value: string | null
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: `1px solid rgba(255,255,255,0.03)` }}>
       <span style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>{label}</span>
       <span style={{ fontSize: 12, fontWeight: 700, color: accent || C.text }}>{value}</span>
+    </div>
+  );
+}
+
+function EditableInfoRow({
+  field, icon: Icon, label, placeholder, inputWidth = 130,
+  currentValue, editing, draft, saving,
+  onStart, onChange, onSave, onCancel,
+}: {
+  field: string;
+  icon?: React.ElementType;
+  label: string;
+  placeholder: string;
+  inputWidth?: number;
+  currentValue: string | null | undefined;
+  editing: boolean;
+  draft: string;
+  saving: boolean;
+  onStart: () => void;
+  onChange: (v: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: `1px solid rgba(255,255,255,0.03)`, gap: 10 }}>
+      <span style={{ fontSize: 11, color: C.muted, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        {Icon && <Icon style={{ width: 11, height: 11 }} />}
+        {label}
+      </span>
+      {editing ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, marginLeft: 12, justifyContent: 'flex-end' }}>
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') onSave(); if (e.key === 'Escape') onCancel(); }}
+            placeholder={placeholder}
+            disabled={saving}
+            data-field={field}
+            style={{ width: inputWidth, padding: '5px 8px', backgroundColor: C.input, border: `1px solid ${C.inputBorder}`, borderRadius: 6, color: C.text, fontSize: 12, fontWeight: 700, fontFamily: 'monospace', outline: 'none' }}
+          />
+          <button onClick={onSave} disabled={saving} style={{ width: 24, height: 24, borderRadius: 5, border: 'none', backgroundColor: C.emerald, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {saving ? <Loader2 style={{ width: 12, height: 12, animation: 'spin 1s linear infinite' }} /> : <Save style={{ width: 12, height: 12 }} />}
+          </button>
+          <button onClick={onCancel} disabled={saving} style={{ width: 24, height: 24, borderRadius: 5, border: `1px solid ${C.cardBorder}`, backgroundColor: 'transparent', color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <X style={{ width: 12, height: 12 }} />
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          {currentValue ? (
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.text, fontFamily: 'monospace', padding: '2px 8px', borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.05)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {currentValue}
+            </span>
+          ) : (
+            <span style={{ fontSize: 12, color: '#334155', fontStyle: 'italic' }}>Not set</span>
+          )}
+          <button onClick={onStart} style={{ width: 22, height: 22, borderRadius: 5, border: `1px solid ${C.cardBorder}`, backgroundColor: 'rgba(255,255,255,0.03)', color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={`Edit ${label.toLowerCase()}`}>
+            <Edit2 style={{ width: 11, height: 11 }} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -200,6 +265,44 @@ export default function MedicineDetailPage() {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const supplierRef = useRef<HTMLDivElement>(null);
 
+  // Inline edits for rack/HSN/barcode
+  const [editField, setEditField] = useState<'rack_location' | 'hsn_code' | 'barcode' | null>(null);
+  const [fieldDraft, setFieldDraft] = useState('');
+  const [fieldSaving, setFieldSaving] = useState(false);
+
+  const startFieldEdit = (field: 'rack_location' | 'hsn_code' | 'barcode') => {
+    const current =
+      field === 'rack_location' ? medicine?.rack_location :
+      field === 'hsn_code' ? medicine?.hsn_code :
+      medicine?.barcode;
+    setFieldDraft(current || '');
+    setEditField(field);
+  };
+  const cancelFieldEdit = () => {
+    setEditField(null);
+    setFieldDraft('');
+  };
+  const saveField = async () => {
+    if (!medicine || !pharmacyId || !editField) return;
+    const trimmed = fieldDraft.trim();
+    setFieldSaving(true);
+    try {
+      const { error } = await supabase
+        .from('medicines')
+        .update({ [editField]: trimmed || null })
+        .eq('id', medicine.id)
+        .eq('pharmacy_id', pharmacyId);
+      if (error) throw error;
+      setMedicine({ ...medicine, [editField]: trimmed || null });
+      toast.success('Updated');
+      setEditField(null);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to update');
+    } finally {
+      setFieldSaving(false);
+    }
+  };
+
   /* ─ Load ─ */
   const load = useCallback(async () => {
     if (!pharmacyId || !medicineId) { setLoading(false); return; }
@@ -208,7 +311,7 @@ export default function MedicineDetailPage() {
       const [medRes, batchRes] = await Promise.all([
         supabase.from('medicines').select('*').eq('id', medicineId).eq('pharmacy_id', pharmacyId).single(),
         supabase.from('batches')
-          .select('id, batch_number, expiry_date, stock_quantity, purchase_price, mrp, created_at')
+          .select('id, batch_number, expiry_date, stock_quantity, purchase_price, mrp, created_at, challan_id')
           .eq('medicine_id', medicineId).eq('pharmacy_id', pharmacyId)
           .order('expiry_date'),
       ]);
@@ -416,6 +519,15 @@ export default function MedicineDetailPage() {
             <RefreshCw style={{ width: 14, height: 14 }} />
           </button>
           <button
+            onClick={() => router.push(`/panel/inventory/${medicineId}/edit`)}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 10, border: `1px solid ${C.cardBorder}`, backgroundColor: 'rgba(255,255,255,0.03)', color: C.text, fontSize: 13, fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s ease' }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'; }}
+          >
+            <Edit2 style={{ width: 13, height: 13 }} />
+            Edit Details
+          </button>
+          <button
             onClick={() => { setShowAdd(true); setAddError(null); }}
             style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#6366f1,#7c3aed)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', boxShadow: '0 6px 20px rgba(99,102,241,0.3)', transition: 'all 0.15s ease' }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
@@ -445,8 +557,28 @@ export default function MedicineDetailPage() {
           <InfoRow label="Pack Size" value={medicine.pack_unit ? `${medicine.pack_unit} (${medicine.pack_size} per pack)` : `${medicine.pack_size} units`} />
           <InfoRow label="Sale Mode" value={medicine.sale_unit_mode === 'both' ? `Pack + Units (${medicine.units_per_pack}/pack)` : 'Pack Only'} />
           <InfoRow label="GST Rate" value={`${medicine.gst_rate}%`} />
-          <InfoRow label="HSN Code" value={medicine.hsn_code} />
           <InfoRow label="Min Stock Alert" value={isFlexible ? `${medicine.min_stock_level} Strips` : `${medicine.min_stock_level} ${medicine.pack_unit || 'units'}`} />
+          <EditableInfoRow
+            field="rack_location" icon={MapPin} label="Rack Location" placeholder="e.g. A-12"
+            currentValue={medicine.rack_location}
+            editing={editField === 'rack_location'} draft={fieldDraft} saving={fieldSaving}
+            onStart={() => startFieldEdit('rack_location')} onChange={setFieldDraft}
+            onSave={saveField} onCancel={cancelFieldEdit}
+          />
+          <EditableInfoRow
+            field="hsn_code" label="HSN Code" placeholder="e.g. 3004"
+            currentValue={medicine.hsn_code}
+            editing={editField === 'hsn_code'} draft={fieldDraft} saving={fieldSaving}
+            onStart={() => startFieldEdit('hsn_code')} onChange={setFieldDraft}
+            onSave={saveField} onCancel={cancelFieldEdit}
+          />
+          <EditableInfoRow
+            field="barcode" label="Barcode" placeholder="e.g. 8901234567890" inputWidth={170}
+            currentValue={medicine.barcode}
+            editing={editField === 'barcode'} draft={fieldDraft} saving={fieldSaving}
+            onStart={() => startFieldEdit('barcode')} onChange={setFieldDraft}
+            onSave={saveField} onCancel={cancelFieldEdit}
+          />
           {medicine.generic_name && <InfoRow label="Generic Name" value={medicine.generic_name} />}
           {medicine.manufacturer && <InfoRow label="Manufacturer" value={medicine.manufacturer} />}
         </div>
@@ -496,6 +628,16 @@ export default function MedicineDetailPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', marginBottom: 4 }}>
                         <span style={{ fontSize: 13, fontWeight: 800, color: C.text }}>Batch: {b.batch_number}</span>
+                        {b.challan_id && (
+                          <span
+                            onClick={(e) => { e.stopPropagation(); router.push(`/panel/challans/${b.challan_id}`); }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 6, backgroundColor: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)', color: '#c084fc', fontSize: 9, fontWeight: 800, letterSpacing: '0.04em', cursor: 'pointer' }}
+                            title="This batch came from a delivery challan — click to view"
+                          >
+                            <Truck style={{ width: 10, height: 10 }} />
+                            FROM CHALLAN
+                          </span>
+                        )}
                         {b.stock_quantity === 0 && (
                           <span style={{ padding: '2px 6px', borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.04)', color: C.muted, fontSize: 9, fontWeight: 800 }}>OUT OF STOCK</span>
                         )}
